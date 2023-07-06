@@ -345,7 +345,7 @@ int main(int argc, char **argv) {
             if(!image_ready)
                 cond_image_rec.wait(lk);
 
-#ifdef COMPILEDWITHC11
+#ifdef COMPILEDWITHC14
             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
 #else
             std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
