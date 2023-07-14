@@ -89,5 +89,5 @@ Viewer.ViewpointZ: -3.5 # -1.8
 Viewer.ViewpointF: 500
 
 # System Parameters
-System.LoadAtlasFromFile: atlas_2
+System.LoadAtlasFromFile: atlas
 # System.SaveAtlasToFile: atlas
