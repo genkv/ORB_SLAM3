@@ -232,6 +232,10 @@ add_executable(mono_inertial_gopro_vi
 Examples/Monocular-Inertial/mono_inertial_gopro_vi.cc)
 target_link_libraries(mono_inertial_gopro_vi ${PROJECT_NAME})
 
+add_executable(export_map_from_atlas
+Examples/Monocular-Inertial/export_map_from_atlas.cc)
+target_link_libraries(export_map_from_atlas ${PROJECT_NAME})
+
 if(realsense2_FOUND)
     add_executable(mono_inertial_realsense_t265
             Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc)

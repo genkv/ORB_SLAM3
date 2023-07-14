@@ -56,8 +56,8 @@ Examples/Tests/sophus_test
 Examples/ROS/ORB_SLAM3/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM3/build/
 
-KeyFrameTrajectory.txt
-CameraTrajectory.txt
+*Trajectory.txt
+*Trajectory.txt
 kf_*.txt
 f_*.txt
 Thirdparty/DBoW2/build/

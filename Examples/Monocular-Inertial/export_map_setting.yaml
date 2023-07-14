@@ -5,14 +5,14 @@
 #--------------------------------------------------------------------------------------------
 Camera.type: "KannalaBrandt8"
 # Camera calibration and distortion parameters (OpenICC https://github.com/urbste/OpenImuCameraCalibrator) 
-# Camera.fx: 188.60460651 # 190.97847715128717
-# Camera.fy: 188.60460651 # 190.9733070521226
-# Camera.cx: 320.57432535 # 254.93170605935475
-# Camera.cy: 239.40467006 # 256.8974428996504
-Camera.fx: 796.8544625226342 # 190.97847715128717
-Camera.fy: 796.8544625226342 # 190.9733070521226
-Camera.cx: 1354.4265245977356 # 254.93170605935475
-Camera.cy: 1011.4847310011687 # 256.8974428996504
+Camera.fx: 188.60460651 # 190.97847715128717
+Camera.fy: 188.60460651 # 190.9733070521226
+Camera.cx: 320.57432535 # 254.93170605935475
+Camera.cy: 239.40467006 # 256.8974428996504
+# Camera.fx: 796.8544625226342 # 190.97847715128717
+# Camera.fy: 796.8544625226342 # 190.9733070521226
+# Camera.cx: 1354.4265245977356 # 254.93170605935475
+# Camera.cy: 1011.4847310011687 # 256.8974428996504
 
 Camera.k1: -0.02196117964405394 # 0.0034823894022493434
 Camera.k2: -0.018959717016668237 # 0.0007150348452162257
@@ -20,10 +20,10 @@ Camera.k3: 0.001693880829392453 # -0.0020532361418706202
 Camera.k4: -0.00016807228608000285 # 0.00020293673591811182
 
 # Camera resolution
-# Camera.width: 640
-# Camera.height: 480
-Camera.width: 2704
-Camera.height: 2028
+Camera.width: 640
+Camera.height: 480
+# Camera.width: 2704
+# Camera.height: 2028
 
 # Camera frames per second 
 Camera.fps: 60.0
@@ -89,5 +89,5 @@ Viewer.ViewpointZ: -3.5 # -1.8
 Viewer.ViewpointF: 500
 
 # System Parameters
-# System.LoadAtlasFromFile: atlas
-System.SaveAtlasToFile: atlas
+System.LoadAtlasFromFile: atlas_2
+# System.SaveAtlasToFile: atlas
