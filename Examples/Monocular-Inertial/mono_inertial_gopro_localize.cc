@@ -133,9 +133,9 @@ void draw_gripper_mask(cv::Mat &img){
 
 
 int main(int argc, char **argv) {
-  if (argc != 5) {
+  if (argc != 6) {
     cerr << endl
-         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry"
+         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output"
          << endl;
     return 1;
   }
@@ -161,6 +161,12 @@ int main(int argc, char **argv) {
   ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, true);
   // localization only
   SLAM.ActivateLocalizationMode();
+
+  // open file stream for saving TUM trajectory
+  cout << endl << "Saving camera trajectory to " << argv[5] << " ..." << endl;
+  ofstream f;
+  f.open(argv[5]);
+  f << fixed;
 
   // Vector for tracking time statistics
   vector<float> vTimesTrack;
@@ -211,24 +217,24 @@ int main(int argc, char **argv) {
       }
 
 
-#ifdef COMPILEDWITHC14
       std::chrono::steady_clock::time_point t1 =
           std::chrono::steady_clock::now();
-#else
-      std::chrono::monotonic_clock::time_point t1 =
-          std::chrono::monotonic_clock::now();
-#endif
 
       // Pass the image to the SLAM system
-      SLAM.TrackMonocular(im_track, tframe, vImuMeas);
+      auto result = SLAM.LocalizeMonocular(im_track, tframe, vImuMeas);
 
-#ifdef COMPILEDWITHC14
+      // saving to TUM file
+      bool has_tracking = result.second;
+      if (has_tracking){
+        Sophus::SE3f Tcw = result.first;
+        Sophus::SE3f Twc = Tcw.inverse();
+        Eigen::Vector3f twc = Twc.translation();
+        Eigen::Quaternionf q = Twc.unit_quaternion();
+        f << setprecision(6) << tframe << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+      }
+
       std::chrono::steady_clock::time_point t2 =
           std::chrono::steady_clock::now();
-#else
-      std::chrono::monotonic_clock::time_point t2 =
-          std::chrono::monotonic_clock::now();
-#endif
 
       double ttrack =
           std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
@@ -244,6 +250,8 @@ int main(int argc, char **argv) {
       if (ttrack < frame_diff_s)
         usleep((frame_diff_s - ttrack) * 1e6);
   }
+  
+  f.close();
 
   // Stop all threads
   SLAM.Shutdown();
@@ -257,12 +265,6 @@ int main(int argc, char **argv) {
   cout << "-------" << endl << endl;
   cout << "median tracking time: " << vTimesTrack[nImages / 2] << endl;
   cout << "mean tracking time: " << totaltime / nImages << endl;
-
-  // Save camera trajectory
-  // SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
-  // SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-  SLAM.SaveTrajectoryTUM("TUM_CameraTrajectory.txt");
-  SLAM.SaveKeyFrameTrajectoryTUM("TUM_KeyFrameTrajectory.txt");
 
   return 0;
 }
