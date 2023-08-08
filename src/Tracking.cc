@@ -1942,7 +1942,6 @@ void Tracking::Track()
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
-
             // State OK
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
@@ -1987,7 +1986,6 @@ void Tracking::Track()
             }
             else
             {
-
                 if (mState == RECENTLY_LOST)
                 {
                     Verbose::PrintMess("Lost for a short time", Verbose::VERBOSITY_NORMAL);
@@ -2288,7 +2286,8 @@ void Tracking::Track()
         }
 
         // Reset if the camera get lost soon after initialization
-        if(mState==LOST)
+        // in localiztaion mode, do not reset map. just let it fail and wait for relocalization success
+        if(mState==LOST && (!mbOnlyTracking))
         {
             if(pCurrentMap->KeyFramesInMap()<=10)
             {

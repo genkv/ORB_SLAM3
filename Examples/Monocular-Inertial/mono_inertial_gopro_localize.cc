@@ -140,6 +140,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  cv::setNumThreads(4);
+
   vector<double> imuTimestamps;
   vector<double> camTimestamps;
   vector<cv::Point3f> vAcc, vGyr;

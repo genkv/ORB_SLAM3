@@ -173,6 +173,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         vector<Map*> map_vector = mpAtlas->GetAllMaps();
         mpAtlas->ChangeMap(map_vector.at(0));
 
+        Map* pCurrentMap = mpAtlas->GetCurrentMap();
+        cout << "line 177 keyframes in map: " << pCurrentMap->KeyFramesInMap() << endl;
+
         //clock_t timeElapsed = clock() - start;
         //unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
         //cout << "Binary file read in " << msElapsed << " ms" << endl;
