@@ -1591,7 +1591,7 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
     }
     else if(mSensor == System::IMU_MONOCULAR)
     {
-        std::cout<< "mState: " << mState << std::endl;
+        // std::cout<< "mState: " << mState << std::endl;
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         {
             mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);

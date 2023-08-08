@@ -133,9 +133,9 @@ void draw_gripper_mask(cv::Mat &img){
 
 
 int main(int argc, char **argv) {
-  if (argc != 6) {
+  if (argc != 7) {
     cerr << endl
-         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output"
+         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output use_viewer"
          << endl;
     return 1;
   }
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   vector<double> vTimestamps;
   // Create SLAM system. It initializes all system threads and gets ready to
   // process frames.
-  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, true);
+  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, (bool) atoi(argv[6]));
   // localization only
   SLAM.ActivateLocalizationMode();
 
