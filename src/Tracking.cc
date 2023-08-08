@@ -77,8 +77,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
                 std::cout << "*Error with the IMU parameters in the config file*" << std::endl;
             }
 
-            // mnFramesToResetIMU = mMaxFrames;
-            mnFramesToResetIMU = 20000000;
+            mnFramesToResetIMU = mMaxFrames;
+            // mnFramesToResetIMU = 20000000;
         }
 
         if(!b_parse_cam || !b_parse_orb || !b_parse_imu)
@@ -1864,6 +1864,7 @@ void Tracking::Track()
     if(mState==NO_IMAGES_YET)
     {
         if(mbOnlyTracking){
+            // assume mbOnlyTracking will only be used for localizing from disk-loaded map
             // trigger relocalization in localization mode.
             mState = LOST;
             mLastFrame = mCurrentFrame;
@@ -2989,9 +2990,12 @@ bool Tracking::TrackLocalMap()
         }
 
     int inliers;
-    if (!mpAtlas->isImuInitialized())
+    
+    //if (!mpAtlas->isImuInitialized()){
+    // assuming mbOnlyTracking will only be on if we localize from disk loaded map
+    if (mbOnlyTracking || !mpAtlas->isImuInitialized()){
         Optimizer::PoseOptimization(&mCurrentFrame);
-    else
+    } else
     {
         if(mCurrentFrame.mnId<=mnLastRelocFrameId+mnFramesToResetIMU)
         {
@@ -3001,7 +3005,7 @@ bool Tracking::TrackLocalMap()
         else
         {
             // if(!mbMapUpdated && mState == OK) //  && (mnMatchesInliers>30))
-            if(!mbMapUpdated) //  && (mnMatchesInliers>30))
+            if(!mbMapUpdated && mCurrentFrame.mpPrevFrame->mpcpi) //  && (mnMatchesInliers>30))
             {
                 Verbose::PrintMess("TLM: PoseInertialOptimizationLastFrame ", Verbose::VERBOSITY_DEBUG);
                 inliers = Optimizer::PoseInertialOptimizationLastFrame(&mCurrentFrame); // , !mpLastKeyFrame->GetMap()->GetIniertialBA1());
