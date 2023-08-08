@@ -1863,9 +1863,14 @@ void Tracking::Track()
 
     if(mState==NO_IMAGES_YET)
     {
-        //mState = NOT_INITIALIZED;
-        mState = LOST;
-        mLastFrame = mCurrentFrame;
+        if(mbOnlyTracking){
+            // trigger relocalization in localization mode.
+            mState = LOST;
+            mLastFrame = mCurrentFrame;
+        } else {
+            // trigger initialization.
+            mState = NOT_INITIALIZED;
+        }        
     }
 
     mLastProcessedState=mState;
@@ -1989,9 +1994,7 @@ void Tracking::Track()
                     bOK = true;
                     if((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD))
                     {   
-                        cout << "line 1992" << endl;
                         if(pCurrentMap->isImuInitialized()){
-                            cout << "line 1994 PredictStateIMU" << endl;
                             PredictStateIMU();
                         } else {
                             bOK = false;
@@ -2019,7 +2022,6 @@ void Tracking::Track()
                 }
                 else if (mState == LOST)
                 {
-
                     Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
 
                     if (pCurrentMap->KeyFramesInMap()<10)
@@ -2047,11 +2049,8 @@ void Tracking::Track()
                 if(mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
                     Verbose::PrintMess("IMU. State LOST", Verbose::VERBOSITY_NORMAL);
                 bOK = Relocalization();
-                std::cout << "Relocalization 2046" << std::endl;
             } else if (mState == RECENTLY_LOST) {
-                cout << "line 2052" << endl;
                 if(pCurrentMap->isImuInitialized()){
-                    cout << "line 2055 PredictStateIMU" << endl;
                     bOK = PredictStateIMU();
                 } else {
                     bOK = false;
@@ -2113,7 +2112,6 @@ void Tracking::Track()
                     }
                     else if(bOKReloc)
                     {
-                        // cout << "line 2105 mbVO = false" << endl;
                         mbVO = false;
                     }
 
@@ -2137,12 +2135,10 @@ void Tracking::Track()
         std::chrono::steady_clock::time_point time_StartLMTrack = std::chrono::steady_clock::now();
 #endif
         // If we have an initial estimation of the camera pose and matching. Track the local map.
-        // std::cout << "line 2126" << std::endl;
         if(!mbOnlyTracking)
         {
             if(bOK)
             {
-                // std::cout << "line 2132" << std::endl;
                 bOK = TrackLocalMap();
 
             }
@@ -2154,14 +2150,10 @@ void Tracking::Track()
             // mbVO true means that there are few matches to MapPoints in the map. We cannot retrieve
             // a local map and therefore we do not perform TrackLocalMap(). Once the system relocalizes
             // the camera we will use the local map again.
-            // if(bOK && !mbVO){
-            if (bOK){
-                // std::cout << "line 2145" << std::endl;
+            if(bOK && !mbVO){
                 bOK = TrackLocalMap();
-                std::cout << "TrackLocalMap returns " << bOK << std::endl;
             }
         }
-        // std::cout << "line 2149" << std::endl;
 
         if(bOK)
             mState = OK;
@@ -2187,27 +2179,22 @@ void Tracking::Track()
             //}
         }
         
-        // std::cout << "line 2170" << std::endl;
         // Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
         if((mCurrentFrame.mnId<(mnLastRelocFrameId+mnFramesToResetIMU)) && (mCurrentFrame.mnId > mnFramesToResetIMU) &&
            (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && pCurrentMap->isImuInitialized())
         {
             // TODO check this situation
             Verbose::PrintMess("Saving pointer to frame. imu needs reset...", Verbose::VERBOSITY_NORMAL);
-            // Frame* pF = new Frame(mCurrentFrame);
-            // std::cout << "line 2178" << std::endl;
-            // Frame* lF = new Frame(mLastFrame);
-            // std::cout << "line 2180" << std::endl;
-            // pF->mpPrevFrame = lF;
-            // std::cout << "line 2182" << std::endl;
+            if (!mbOnlyTracking){
+                Frame* pF = new Frame(mCurrentFrame);
+                Frame* lF = new Frame(mLastFrame);
+                pF->mpPrevFrame = lF;
             
-
-            // // Load preintegration
-            // pF->mpImuPreintegratedFrame = new IMU::Preintegrated(mCurrentFrame.mpImuPreintegratedFrame);
-            // std::cout << "line 2187" << std::endl;
+                // Load preintegration
+                pF->mpImuPreintegratedFrame = new IMU::Preintegrated(mCurrentFrame.mpImuPreintegratedFrame);
+            }
         }
 
-        // std::cout << "line 2191" << std::endl;
         if(pCurrentMap->isImuInitialized())
         {
             if(bOK)
@@ -2216,13 +2203,11 @@ void Tracking::Track()
                 {
                     cout << "RESETING FRAME!!!" << endl;
                     ResetFrameIMU();
-                    // cout << "line 2200" << endl;
                 }
                 else if(mCurrentFrame.mnId>(mnLastRelocFrameId+30))
                     mLastBias = mCurrentFrame.mImuBias;
             }
         }
-        // cout << "line 2206" << endl;
 
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_EndLMTrack = std::chrono::steady_clock::now();
@@ -2990,10 +2975,8 @@ bool Tracking::TrackLocalMap()
     // We retrieve the local map and try to find matches to points in the local map.
     mTrackedFr++;
 
-    cout << "line 2978" << endl;
     UpdateLocalMap();
     SearchLocalPoints();
-    cout << "line 2981" << endl;
 
     // TOO check outliers before PO
     int aux1 = 0, aux2=0;
