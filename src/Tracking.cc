@@ -45,7 +45,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mState(NO_IMAGES_YET), mSensor(sensor), mTrackedFr(0), mbStep(false),
     mbOnlyTracking(false), mbMapUpdated(false), mbVO(false), mpORBVocabulary(pVoc), mpKeyFrameDB(pKFDB),
     mbReadyToInitializate(false), mpSystem(pSys), mpViewer(NULL), bStepByStep(false),
-    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(5.0),
+    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(0.2),
     mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr), mpLastKeyFrame(static_cast<KeyFrame*>(NULL))
 {
     // Load camera parameters from settings file
@@ -2053,6 +2053,12 @@ void Tracking::Track()
                     bOK = PredictStateIMU();
                 } else {
                     bOK = false;
+                }
+                if (mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost)
+                {
+                    mState = LOST;
+                    Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
+                    bOK=false;
                 }
             }
             else
