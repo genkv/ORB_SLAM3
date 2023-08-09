@@ -1582,6 +1582,7 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
             cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
     }
 
+    cout << "line 1585" << endl;
     if (mSensor == System::MONOCULAR)
     {
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET ||(lastID - initID) < mMaxFrames)
@@ -1600,6 +1601,7 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
             mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
     }
 
+    cout << "line 1604" << endl;
     if (mState==NO_IMAGES_YET)
         t0=timestamp;
 
@@ -1611,7 +1613,10 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
 #endif
 
     lastID = mCurrentFrame.mnId;
+
+    cout << "line 1616" << endl;
     Track();
+    cout << "line 1619" << endl;
 
     return mCurrentFrame.GetPose();
 }
@@ -1826,6 +1831,7 @@ void Tracking::Track()
             cerr << "mCurrentFrame.mTimeStamp=" << mCurrentFrame.mTimeStamp << endl;
             unique_lock<mutex> lock(mMutexImuQueue);
             mlQueueImuData.clear();
+            cout << "line 1827" << endl;
             CreateMapInAtlas();
             return;
         }
@@ -1845,6 +1851,7 @@ void Tracking::Track()
                     }
                     else
                     {
+                        cout << "line 1846" << endl;
                         CreateMapInAtlas();
                     }
                 }
@@ -1872,7 +1879,14 @@ void Tracking::Track()
             mLastFrame = mCurrentFrame;
         } else {
             // trigger initialization.
-            mState = NOT_INITIALIZED;
+            cout << "line 1873 keyframes " << pCurrentMap->KeyFramesInMap() << "MapPoints" << pCurrentMap->MapPointsInMap() << endl;
+            if (pCurrentMap->KeyFramesInMap() == 0){
+                mState = NOT_INITIALIZED;
+            } else {
+                cout << "line 1877" << endl;
+                // Relocalization();
+                mState = INIT_RELOCALIZE;
+            }
         }        
     }
 
@@ -2029,8 +2043,10 @@ void Tracking::Track()
                     {
                         mpSystem->ResetActiveMap();
                         Verbose::PrintMess("Reseting current map...", Verbose::VERBOSITY_NORMAL);
-                    }else
+                    }else {
+                        cout << "line 2037" << endl;
                         CreateMapInAtlas();
+                    }
 
                     if(mpLastKeyFrame)
                         mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
@@ -2038,6 +2054,17 @@ void Tracking::Track()
                     Verbose::PrintMess("done", Verbose::VERBOSITY_NORMAL);
 
                     return;
+                }
+                else if (mState == INIT_RELOCALIZE)
+                {
+                    bOK = Relocalization();
+                    if (bOK) {
+                        KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpAtlas->GetCurrentMap(),mpKeyFrameDB);
+                        mpAtlas->AddKeyFrame(pKFcur);
+                        pKFcur->UpdateConnections();
+                        mpLocalMapper->InsertKeyFrame(pKFcur);
+                        mState == OK;
+                    }
                 }
             }
 
@@ -2144,13 +2171,17 @@ void Tracking::Track()
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
+            cout << "line 2163 mbVO " << mbVO << endl;
             if(bOK)
             {
                 bOK = TrackLocalMap();
+                cout << "line 2172" << endl;
 
             }
-            if(!bOK)
+            if(!bOK){
                 cout << "Fail to track local map!" << endl;
+                mState = INIT_RELOCALIZE;
+            }
         }
         else
         {
@@ -2162,6 +2193,7 @@ void Tracking::Track()
             }
         }
 
+        cout << "line 2184" << endl;
         if(bOK)
             mState = OK;
         else if (mState == OK)
@@ -2185,23 +2217,23 @@ void Tracking::Track()
                 mTimeStampLost = mCurrentFrame.mTimeStamp;
             //}
         }
-        
+        cout << "line 2208" << endl;
         // Save frame if recent relocalization, since they are used for IMU reset (as we are making copy, it shluld be once mCurrFrame is completely modified)
         if((mCurrentFrame.mnId<(mnLastRelocFrameId+mnFramesToResetIMU)) && (mCurrentFrame.mnId > mnFramesToResetIMU) &&
            (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && pCurrentMap->isImuInitialized())
         {
             // TODO check this situation
             Verbose::PrintMess("Saving pointer to frame. imu needs reset...", Verbose::VERBOSITY_NORMAL);
-            if (!mbOnlyTracking){
-                Frame* pF = new Frame(mCurrentFrame);
-                Frame* lF = new Frame(mLastFrame);
-                pF->mpPrevFrame = lF;
+            // if (!mbOnlyTracking){
+            //     Frame* pF = new Frame(mCurrentFrame);
+            //     Frame* lF = new Frame(mLastFrame);
+            //     pF->mpPrevFrame = lF;
             
-                // Load preintegration
-                pF->mpImuPreintegratedFrame = new IMU::Preintegrated(mCurrentFrame.mpImuPreintegratedFrame);
-            }
+            //     // Load preintegration
+            //     pF->mpImuPreintegratedFrame = new IMU::Preintegrated(mCurrentFrame.mpImuPreintegratedFrame);
+            // }
         }
-
+        cout << "line 2224" << endl;
         if(pCurrentMap->isImuInitialized())
         {
             if(bOK)
@@ -2223,6 +2255,7 @@ void Tracking::Track()
         vdLMTrack_ms.push_back(timeLMTrack);
 #endif
 
+        cout << "line 2246" << endl;
         // Update drawer
         mpFrameDrawer->Update(this);
         if(mCurrentFrame.isSet())
@@ -2292,7 +2325,8 @@ void Tracking::Track()
                     mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
             }
         }
-
+        
+        cout << "line 2317" << endl;
         // Reset if the camera get lost soon after initialization
         // in localiztaion mode, do not reset map. just let it fail and wait for relocalization success
         if(mState==LOST && (!mbOnlyTracking))
@@ -2310,6 +2344,7 @@ void Tracking::Track()
                     return;
                 }
 
+            cout << "line 2319" << endl;
             CreateMapInAtlas();
 
             return;
@@ -2323,7 +2358,7 @@ void Tracking::Track()
 
 
 
-
+    cout << "line 2349" << endl;
     if(mState==OK || mState==RECENTLY_LOST)
     {
         // Store frame pose information to retrieve the complete camera trajectory afterwards.
@@ -2692,6 +2727,7 @@ void Tracking::CreateInitialMapMonocular()
 void Tracking::CreateMapInAtlas()
 {
     mnLastInitFrameId = mCurrentFrame.mnId;
+    cout << "line 2699" << endl;
     mpAtlas->CreateNewMap();
     if (mSensor==System::IMU_STEREO || mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_RGBD)
         mpAtlas->SetInertialSensor();
@@ -3015,13 +3051,16 @@ bool Tracking::TrackLocalMap()
             if(!mbMapUpdated && mCurrentFrame.mpPrevFrame->mpcpi) //  && (mnMatchesInliers>30))
             {
                 Verbose::PrintMess("TLM: PoseInertialOptimizationLastFrame ", Verbose::VERBOSITY_DEBUG);
+                cout << "line 3048" << endl;
                 inliers = Optimizer::PoseInertialOptimizationLastFrame(&mCurrentFrame); // , !mpLastKeyFrame->GetMap()->GetIniertialBA1());
             }
             else
             {
+                cout << "line 3053" << endl;
                 Verbose::PrintMess("TLM: PoseInertialOptimizationLastKeyFrame ", Verbose::VERBOSITY_DEBUG);
                 inliers = Optimizer::PoseInertialOptimizationLastKeyFrame(&mCurrentFrame); // , !mpLastKeyFrame->GetMap()->GetIniertialBA1());
             }
+            cout << "line 3057" << endl;
         }
     }
 
@@ -3841,6 +3880,8 @@ void Tracking::Reset(bool bLocMap)
 
     // Clear Map (this erase MapPoints and KeyFrames)
     mpAtlas->clearAtlas();
+
+    cout << "line 3850" << endl;
     mpAtlas->CreateNewMap();
     if (mSensor==System::IMU_STEREO || mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_RGBD)
         mpAtlas->SetInertialSensor();
