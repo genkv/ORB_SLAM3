@@ -730,7 +730,7 @@ void System::SaveTrajectoryTUM(const string &filename)
         f << setprecision(6) << *lT << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
     f.close();
-    // cout << endl << "trajectory saved!" << endl;
+    cout << endl << "TMU camera trajectory saved!" << endl;
 }
 
 void System::SaveKeyFrameTrajectoryTUM(const string &filename)
@@ -762,8 +762,8 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
           << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
 
     }
-
     f.close();
+    cout << endl << "TMU keyframe trajectory saved!" << endl;
 }
 
 void System::SaveTrajectoryEuRoC(const string &filename)
