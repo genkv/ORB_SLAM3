@@ -185,6 +185,7 @@ int main(int argc, char **argv) {
   int nImages = cap.get(cv::CAP_PROP_FRAME_COUNT);
   double fps = cap.get(cv::CAP_PROP_FPS);
   double frame_diff_s = 1./fps;
+  double prev_tframe = -100.;
   std::vector<ORB_SLAM3::IMU::Point> vImuMeas;
   size_t last_imu_idx = 0;
   while (1) {
@@ -201,7 +202,13 @@ int main(int argc, char **argv) {
     }
       im_track = im.clone();
       double tframe = cap.get(cv::CAP_PROP_POS_MSEC) * MS_TO_S;
-      // double tframe = camTimestamps[img_id];
+
+      // tframe goes to 0 sometimes after video ends;
+      if (tframe < prev_tframe) {
+        break;
+      }
+      prev_tframe = tframe;
+
       ++img_id;
 
       cv::resize(im_track, im_track, img_size);
