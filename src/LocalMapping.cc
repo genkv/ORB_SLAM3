@@ -128,9 +128,6 @@ void LocalMapping::Run()
 
                     if(mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized())
                     {
-                        cout << "line 131" << endl;
-                        cout << "mpCurrentKeyFrame->mnId" << mpCurrentKeyFrame->mnId << endl;
-                        cout << "mpCurrentKeyFrame->mPrevKF" << mpCurrentKeyFrame->mPrevKF << endl;
                         // This code assumes > 2 keyframes in map
                         // However resuming is a little weird
                         if ((mpCurrentKeyFrame->mPrevKF != nullptr) && (mpCurrentKeyFrame->mPrevKF != nullptr)){

@@ -2658,8 +2658,12 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
 
             optimizer.addEdge(vear[i]);
         }
-        else
+        else if (!pKFi->mpImuPreintegrated){
+            cout << "No IMU Preintegration for KeyFrame " << pKFi->mnId << ", skipping inertial edge." << endl;
+        }
+        else {
             cout << "ERROR building inertial edge" << endl;
+        }
     }
 
     // Set MapPoint vertices
