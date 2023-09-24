@@ -174,7 +174,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mpAtlas->ChangeMap(map_vector.at(0));
 
         Map* pCurrentMap = mpAtlas->GetCurrentMap();
-        cout << "line 177 keyframes in map: " << pCurrentMap->KeyFramesInMap() << endl;
 
         //clock_t timeElapsed = clock() - start;
         //unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
@@ -448,7 +447,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
         }
     }
 
-    cout << "line 451" << endl;
     // Check reset
     {
         unique_lock<mutex> lock(mMutexReset);
@@ -466,12 +464,10 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
         }
     }
 
-    cout << "line 467" << endl;
     if (mSensor == System::IMU_MONOCULAR)
         for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
             mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-    cout << "line 472" << endl;
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
     cout << "mState " << mpTracker->mState << endl;
     unique_lock<mutex> lock2(mMutexState);
