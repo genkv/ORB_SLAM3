@@ -133,9 +133,9 @@ void draw_gripper_mask(cv::Mat &img){
 
 
 int main(int argc, char **argv) {
-  if (argc != 7) {
+  if (argc != 8) {
     cerr << endl
-         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output use_viewer"
+         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output use_viewer enable_mapping"
          << endl;
     return 1;
   }
@@ -160,9 +160,14 @@ int main(int argc, char **argv) {
   vector<double> vTimestamps;
   // Create SLAM system. It initializes all system threads and gets ready to
   // process frames.
-  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, (bool) atoi(argv[6]));
+  bool use_viewer = atoi(argv[6]);
+  bool enable_mapping = atoi(argv[7]);
+
+  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, use_viewer);
   // localization only
-  SLAM.ActivateLocalizationMode();
+  if (!enable_mapping){
+    SLAM.ActivateLocalizationMode();
+  }
 
   // open file stream for saving TUM trajectory
   cout << endl << "Saving camera trajectory to " << argv[5] << " ..." << endl;
