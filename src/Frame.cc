@@ -295,6 +295,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // Frame ID
     mnId=nNextId++;
 
+    cout << "line 298" << endl;
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
@@ -304,6 +305,8 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
+    cout << "line 308" << endl;
+    cout << "rows" << imGray.rows << "cols" << imGray.cols << endl;
     // ORB extraction
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
@@ -316,12 +319,14 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 #endif
 
 
+    cout << "line 321" << endl;
     N = mvKeys.size();
     if(mvKeys.empty())
         return;
 
     UndistortKeyPoints();
 
+    cout << "line 327" << endl;
     // Set no stereo information
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
@@ -334,6 +339,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     mvbOutlier = vector<bool>(N,false);
 
+    cout << "line 340" << endl;
     // This is done only for the first Frame (or after a change in the calibration)
     if(mbInitialComputations)
     {
@@ -355,6 +361,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     mb = mbf/fx;
 
+    cout << "line 362" << endl;
     //Set no stereo fisheye information
     Nleft = -1;
     Nright = -1;
@@ -364,6 +371,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     monoLeft = -1;
     monoRight = -1;
 
+    cout << "line 372" << endl;
     AssignFeaturesToGrid();
 
     if(pPrevF)

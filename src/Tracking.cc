@@ -1595,10 +1595,13 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
         // std::cout<< "mState: " << mState << std::endl;
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         {
+            cout << "line 1598" << endl;
             mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
         }
-        else
+        else{
+            cout << "line 1602" << endl;
             mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+        }
     }
 
     cout << "line 1604" << endl;
@@ -1884,6 +1887,8 @@ void Tracking::Track()
                 mState = NOT_INITIALIZED;
             } else {
                 cout << "line 1877" << endl;
+                cout << "mlFrameTimes.size()= " << mlFrameTimes.size() << endl;
+                cout << "KeyFrame::nNextId=" << KeyFrame::nNextId << endl;
                 // Relocalization();
                 mState = INIT_RELOCALIZE;
             }
@@ -2058,8 +2063,39 @@ void Tracking::Track()
                 else if (mState == INIT_RELOCALIZE)
                 {
                     bOK = Relocalization();
-                    if (bOK) {
+                    if (bOK) { 
+                        cout << "INIT_RELOCALIZE success!" << endl;
                         KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpAtlas->GetCurrentMap(),mpKeyFrameDB);
+
+                        // update prev and next pointers
+                        vector<KeyFrame*> vpKFs = pCurrentMap->GetAllKeyFrames();
+                        sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+                        KeyFrame* pKFend = vpKFs.back();
+                        pKFcur->mPrevKF = pKFend;
+                        pKFend->mNextKF = pKFcur;
+
+                        // update timestamps
+                        cout << "vpKFs.back()->mpImuPreintegrated" << vpKFs.back()->mpImuPreintegrated << endl;
+                        double dt = vpKFs.back()->mpImuPreintegrated->dT;
+                        double t_offset = - vpKFs.back()->mTimeStamp - dt;
+                        for (auto kf : vpKFs) {
+                            kf->mTimeStamp += t_offset;
+                        }
+
+                        cout << "pKFCur->mTimeStamp" << pKFcur->mTimeStamp << endl;
+                        cout << "vpKFs.front()->mTimeStamp" << vpKFs.front()->mTimeStamp << endl;
+                        cout << "vpKFs.back()->mTimeStamp" << vpKFs.back()->mTimeStamp << endl;
+
+                        // update map point matches
+                        // actual update is done in local mapper
+                        vector<MapPoint*> vpMapPointMatches = pKFcur->GetMapPointMatches();
+                        cout << "pKFcur->GetMapPointMatches().size()" << vpMapPointMatches.size() << endl;
+
+                        // update last keyframe
+                        mnLastKeyFrameId = pKFcur->mnId;
+                        mpLastKeyFrame = pKFcur;
+
+                        cout << "pKFcur->mnId" << pKFcur->mnId << endl;
                         mpAtlas->AddKeyFrame(pKFcur);
                         pKFcur->UpdateConnections();
                         mpLocalMapper->InsertKeyFrame(pKFcur);
@@ -2684,7 +2720,11 @@ void Tracking::CreateInitialMapMonocular()
         mpImuPreintegratedFromLastKF = new IMU::Preintegrated(pKFcur->mpImuPreintegrated->GetUpdatedBias(),pKFcur->mImuCalib);
     }
 
-
+    cout << "line 2690" << endl;
+    cout << "pKFini->mPrevKF=" << pKFini->mPrevKF << endl;
+    cout << "pKFini->mNextKF=" << pKFini->mNextKF << endl;
+    cout << "pKFcur->mPrevKF=" << pKFcur->mPrevKF<< endl;
+    cout << "pKFcur->mNextKF=" << pKFcur->mNextKF << endl;
     mpLocalMapper->InsertKeyFrame(pKFini);
     mpLocalMapper->InsertKeyFrame(pKFcur);
     mpLocalMapper->mFirstTs=pKFcur->mTimeStamp;
@@ -3019,8 +3059,11 @@ bool Tracking::TrackLocalMap()
     // We retrieve the local map and try to find matches to points in the local map.
     mTrackedFr++;
 
+    cout << "line 3025" << endl;
     UpdateLocalMap();
+    cout << "line 3027" << endl;
     SearchLocalPoints();
+    cout << "line 3028" << endl;
 
     // TOO check outliers before PO
     int aux1 = 0, aux2=0;
@@ -3034,12 +3077,15 @@ bool Tracking::TrackLocalMap()
 
     int inliers;
     
+    cout << "line 3043" << endl;
     //if (!mpAtlas->isImuInitialized()){
     // assuming mbOnlyTracking will only be on if we localize from disk loaded map
     if (mbOnlyTracking || !mpAtlas->isImuInitialized()){
+        cout << "line 3047" << endl;
         Optimizer::PoseOptimization(&mCurrentFrame);
     } else
     {
+        cout << "line 3051" << endl;
         if(mCurrentFrame.mnId<=mnLastRelocFrameId+mnFramesToResetIMU)
         {
             Verbose::PrintMess("TLM: PoseOptimization ", Verbose::VERBOSITY_DEBUG);
@@ -3064,6 +3110,7 @@ bool Tracking::TrackLocalMap()
         }
     }
 
+    cout << "line 3074" << endl;
     aux1 = 0, aux2 = 0;
     for(int i=0; i<mCurrentFrame.N; i++)
         if( mCurrentFrame.mvpMapPoints[i])
@@ -3075,6 +3122,7 @@ bool Tracking::TrackLocalMap()
 
     mnMatchesInliers = 0;
 
+    cout << "line 3086" << endl;
     // Update MapPoints Statistics
     for(int i=0; i<mCurrentFrame.N; i++)
     {
@@ -3096,6 +3144,7 @@ bool Tracking::TrackLocalMap()
         }
     }
 
+    cout << "line 3108" << endl;
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     mpLocalMapper->mnMatchesInliers=mnMatchesInliers;
@@ -3106,6 +3155,7 @@ bool Tracking::TrackLocalMap()
         return true;
 
 
+    cout << "line 3119" << endl;
     if (mSensor == System::IMU_MONOCULAR)
     {
         if((mnMatchesInliers<15 && mpAtlas->isImuInitialized())||(mnMatchesInliers<50 && !mpAtlas->isImuInitialized()))

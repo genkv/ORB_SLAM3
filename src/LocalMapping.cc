@@ -128,23 +128,31 @@ void LocalMapping::Run()
 
                     if(mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized())
                     {
-                        float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm() +
-                                (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
+                        cout << "line 131" << endl;
+                        cout << "mpCurrentKeyFrame->mnId" << mpCurrentKeyFrame->mnId << endl;
+                        cout << "mpCurrentKeyFrame->mPrevKF" << mpCurrentKeyFrame->mPrevKF << endl;
+                        // This code assumes > 2 keyframes in map
+                        // However resuming is a little weird
+                        if ((mpCurrentKeyFrame->mPrevKF != nullptr) && (mpCurrentKeyFrame->mPrevKF != nullptr)){
+                            float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm() +
+                                    (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
 
-                        if(dist>0.05)
-                            mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
-                        // disable bad IMU init check
-                        // if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
-                        // {
-                        //     if((mTinit<10.f) && (dist<0.001))
-                        //     {
-                        //         cout << "Not enough motion for initializing. Reseting... dist: " << dist << " mTinit: " << mTinit << endl;
-                        //         unique_lock<mutex> lock(mMutexReset);
-                        //         mbResetRequestedActiveMap = true;
-                        //         mpMapToReset = mpCurrentKeyFrame->GetMap();
-                        //         mbBadImu = true;
-                        //     }
-                        // }
+                            if(dist>0.05)
+                                mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
+
+                            // disable bad IMU init check
+                            // if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
+                            // {
+                            //     if((mTinit<10.f) && (dist<0.001))
+                            //     {
+                            //         cout << "Not enough motion for initializing. Reseting... dist: " << dist << " mTinit: " << mTinit << endl;
+                            //         unique_lock<mutex> lock(mMutexReset);
+                            //         mbResetRequestedActiveMap = true;
+                            //         mpMapToReset = mpCurrentKeyFrame->GetMap();
+                            //         mbBadImu = true;
+                            //     }
+                            // }
+                        }
 
                         bool bLarge = ((mpTracker->GetMatchesInliers()>75)&&mbMonocular)||((mpTracker->GetMatchesInliers()>100)&&!mbMonocular);
                         Optimizer::LocalInertialBA(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA,num_OptKF_BA,num_MPs_BA,num_edges_BA, bLarge, !mpCurrentKeyFrame->GetMap()->GetIniertialBA2());
