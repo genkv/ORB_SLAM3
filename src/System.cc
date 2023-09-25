@@ -39,7 +39,9 @@ namespace ORB_SLAM3
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer, const int initFr, const string &strSequence):
+               const bool bUseViewer,
+               const string &load_atlas_path,
+               const string &save_atlas_path):
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
     mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
@@ -74,85 +76,45 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
        exit(-1);
     }
 
-    cv::FileNode node = fsSettings["File.version"];
-    if(!node.empty() && node.isString() && node.string() == "1.0"){
-        settings_ = new Settings(strSettingsFile,mSensor);
+    // set load and save atlas
+    mStrLoadAtlasFromFile = load_atlas_path;
+    mStrSaveAtlasToFile = save_atlas_path;
 
-        mStrLoadAtlasFromFile = settings_->atlasLoadFile();
-        mStrSaveAtlasToFile = settings_->atlasSaveFile();
-
-        cout << (*settings_) << endl;
-    }
-    else{
-        settings_ = nullptr;
-        cv::FileNode node = fsSettings["System.LoadAtlasFromFile"];
-        if(!node.empty() && node.isString())
-        {
-            mStrLoadAtlasFromFile = (string)node;
-        }
-
-        node = fsSettings["System.SaveAtlasToFile"];
-        if(!node.empty() && node.isString())
-        {
-            mStrSaveAtlasToFile = (string)node;
-        }
-    }
-
-    node = fsSettings["loopClosing"];
+    // loop closing setting
+    cv::FileNode node = fsSettings["loopClosing"];
     bool activeLC = true;
     if(!node.empty())
     {
         activeLC = static_cast<int>(fsSettings["loopClosing"]) != 0;
     }
 
+    // Load ORB Vocabulary
     mStrVocabularyFilePath = strVocFile;
+    
+    cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
+    mpVocabulary = new ORBVocabulary();
+    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    if(!bVocLoad)
+    {
+        cerr << "Wrong path to vocabulary. " << endl;
+        cerr << "Falied to open at: " << strVocFile << endl;
+        exit(-1);
+    }
+    cout << "Vocabulary loaded!" << endl << endl;
 
-    bool loadedAtlas = false;
+    //Create KeyFrame Database
+    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
+    // handle map loading
     if(mStrLoadAtlasFromFile.empty())
     {
-        //Load ORB Vocabulary
-        cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
-
-        mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
-        if(!bVocLoad)
-        {
-            cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Falied to open at: " << strVocFile << endl;
-            exit(-1);
-        }
-        cout << "Vocabulary loaded!" << endl << endl;
-
-        //Create KeyFrame Database
-        mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
-
-        //Create the Atlas
+        // Create the Atlas
         cout << "Initialization of Atlas from scratch " << endl;
         mpAtlas = new Atlas(0);
     }
     else
     {
-        //Load ORB Vocabulary
-        cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
-
-        mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
-        if(!bVocLoad)
-        {
-            cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Falied to open at: " << strVocFile << endl;
-            exit(-1);
-        }
-        cout << "Vocabulary loaded!" << endl << endl;
-
-        //Create KeyFrame Database
-        mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
-
-        cout << "Load File" << endl;
-
         // Load the file with an earlier session
-        //clock_t start = clock();
         cout << "Initialization of Atlas from file: " << mStrLoadAtlasFromFile << endl;
         bool isRead = LoadAtlas(FileType::BINARY_FILE);
 
@@ -161,27 +123,14 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             cout << "Error to load the file, please try with other session file or vocabulary file" << endl;
             exit(-1);
         }
-        //mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
-
-
-        //cout << "KF in DB: " << mpKeyFrameDatabase->mnNumKFs << "; words: " << mpKeyFrameDatabase->mnNumWords << endl;
-
-        loadedAtlas = true;
 
         // mpAtlas->CreateNewMap();
         // when loading a file from disk, we want to localize
         vector<Map*> map_vector = mpAtlas->GetAllMaps();
         mpAtlas->ChangeMap(map_vector.at(0));
-
         Map* pCurrentMap = mpAtlas->GetCurrentMap();
-
-        //clock_t timeElapsed = clock() - start;
-        //unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
-        //cout << "Binary file read in " << msElapsed << " ms" << endl;
-
-        //usleep(10*1000*1000);
+        cout << "Atlas loaded!" << endl;
     }
-
 
     if (mSensor==IMU_STEREO || mSensor==IMU_MONOCULAR || mSensor==IMU_RGBD)
         mpAtlas->SetInertialSensor();
@@ -192,15 +141,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
-    cout << "Seq. Name: " << strSequence << endl;
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence);
+                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor==MONOCULAR || mSensor==IMU_MONOCULAR,
-                                     mSensor==IMU_MONOCULAR || mSensor==IMU_STEREO || mSensor==IMU_RGBD, strSequence);
+                                     mSensor==IMU_MONOCULAR || mSensor==IMU_STEREO || mSensor==IMU_RGBD);
     mptLocalMapping = new thread(&ORB_SLAM3::LocalMapping::Run,mpLocalMapper);
-    mpLocalMapper->mInitFr = initFr;
     if(settings_)
         mpLocalMapper->mThFarPoints = settings_->thFarPoints();
     else
