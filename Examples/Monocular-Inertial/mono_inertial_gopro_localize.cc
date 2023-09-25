@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
   std::string vocabulary = "../../Vocabulary/ORBvoc.txt";
   app.add_option("-v,--vocabulary", vocabulary)->capture_default_str();
 
-  std::string settings = "gopro10_maxlens_fisheye_localize.yaml";
+  std::string settings = "gopro10_maxlens_fisheye_settings.yaml";
   app.add_option("-s,--settings", settings)->capture_default_str();
 
   std::string input_video;
@@ -150,6 +150,12 @@ int main(int argc, char **argv) {
 
   std::string output_tum;
   app.add_option("-o,--output_tum", output_tum)->required();
+
+  std::string load_map;
+  app.add_option("-l,--load_map", load_map);
+
+  std::string save_map;
+  app.add_option("--save_map", save_map);
 
   bool disable_gui = false;
   app.add_flag("-g,--disable_gui", disable_gui);
@@ -191,7 +197,7 @@ int main(int argc, char **argv) {
   // Create SLAM system. It initializes all system threads and gets ready to
   // process frames.
 
-  ORB_SLAM3::System SLAM(vocabulary, settings, ORB_SLAM3::System::IMU_MONOCULAR, !disable_gui);
+  ORB_SLAM3::System SLAM(vocabulary, settings, ORB_SLAM3::System::IMU_MONOCULAR, !disable_gui, load_map, save_map);
   // localization only
   if (disable_mapping){
     SLAM.ActivateLocalizationMode();

@@ -76,12 +76,21 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
        exit(-1);
     }
 
+    cv::FileNode node = fsSettings["File.version"];
+    if(!node.empty() && node.isString() && node.string() == "1.0"){
+        settings_ = new Settings(strSettingsFile,mSensor);
+        cout << (*settings_) << endl;
+    }
+    else{
+        settings_ = nullptr;
+    }
+
     // set load and save atlas
     mStrLoadAtlasFromFile = load_atlas_path;
     mStrSaveAtlasToFile = save_atlas_path;
 
     // loop closing setting
-    cv::FileNode node = fsSettings["loopClosing"];
+    node = fsSettings["loopClosing"];
     bool activeLC = true;
     if(!node.empty())
     {
@@ -1461,9 +1470,7 @@ void System::SaveAtlas(int type){
         // Save the current session
         mpAtlas->PreSave();
 
-        string pathSaveFileName = "./";
-        pathSaveFileName = pathSaveFileName.append(mStrSaveAtlasToFile);
-        pathSaveFileName = pathSaveFileName.append(".osa");
+        string pathSaveFileName = mStrSaveAtlasToFile;
 
         string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
         std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
@@ -1500,9 +1507,7 @@ bool System::LoadAtlas(int type)
     string strFileVoc, strVocChecksum;
     bool isRead = false;
 
-    string pathLoadFileName = "./";
-    pathLoadFileName = pathLoadFileName.append(mStrLoadAtlasFromFile);
-    pathLoadFileName = pathLoadFileName.append(".osa");
+    string pathLoadFileName = mStrLoadAtlasFromFile;
 
     if(type == TEXT_FILE) // File text
     {
