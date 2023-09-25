@@ -56,11 +56,11 @@ bool LoadTelemetry(const string &path_to_telemetry_file,
     std::map<double, cv::Point3f> sorted_gyr;
 
     for (const auto &e : accl) {
-      cv::Point3f v((float)e["value"][1], (float)e["value"][2], (float)e["value"][0]);
+      cv::Point3f v((float)e["value"][0], (float)e["value"][1], (float)e["value"][2]);
       sorted_acc.insert(std::make_pair((double)e["cts"] * MS_TO_S, v));
     }
     for (const auto &e : gyro) {
-      cv::Point3f v((float)e["value"][1], (float)e["value"][2], (float)e["value"][0]);
+      cv::Point3f v((float)e["value"][0], (float)e["value"][1], (float)e["value"][2]);
       sorted_gyr.insert(std::make_pair((double)e["cts"] * MS_TO_S, v));
     }
 
@@ -194,7 +194,6 @@ int main(int argc, char **argv) {
   }
 
   // Main loop
-  int cnt_empty_frame = 0;
   int img_id = 0;
   int nImages = cap.get(cv::CAP_PROP_FRAME_COUNT);
   double fps = cap.get(cv::CAP_PROP_FPS);

@@ -31,14 +31,22 @@ Camera.RGB: 1
 # Transformation from camera to imu (body frame)
 # calibrated with OpenICC https://github.com/urbste/OpenImuCameraCalibrator
 IMU.T_b_c1: !!opencv-matrix
-   rows: 4
-   cols: 4
-   dt: f
-   data: [-0.999972, -0.00210336, -0.00711724,   0.00335434, 
-           0.00710551,  0.00553032 ,  -0.999959, -0.0267601,
-          0.00214264 ,  -0.999982, -0.00551522, -0.000306161,
-          0.0, 0.0, 0.0, 1.0]
- 
+    rows: 4
+    cols: 4
+    dt: f
+# permuted calibration
+# perm_mat = np.array([
+# [0,0,1,0],
+# [1,0,0,0],
+# [0,1,0,0],
+# [0,0,0,1]
+# ])
+# mat = perm_mat @ open_cam_imu_tbc
+    data: [ 0.00156717, -0.99997878,  0.00632289, -0.01321271, -0.99996531,
+       -0.00161881, -0.00817069, -0.00330095,  0.00818075, -0.00630987,
+       -0.99994663, -0.05175258,  0.        ,  0.        ,  0.        ,
+        1.        ]
+
 # IMU noise -> use OpenICC https://github.com/urbste/OpenImuCameraCalibrator
 IMU.NoiseGyro: 0.0015 # rad/s^0.5 
 IMU.NoiseAcc: 0.017 # m/s^1.5
