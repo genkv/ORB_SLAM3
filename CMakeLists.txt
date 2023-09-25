@@ -236,6 +236,10 @@ add_executable(mono_inertial_gopro_localize
 Examples/Monocular-Inertial/mono_inertial_gopro_localize.cc)
 target_link_libraries(mono_inertial_gopro_localize ${PROJECT_NAME})
 
+add_executable(gopro_slam
+Examples/Monocular-Inertial/gopro_slam.cc)
+target_link_libraries(gopro_slam ${PROJECT_NAME})
+
 add_executable(export_map_from_atlas
 Examples/Monocular-Inertial/export_map_from_atlas.cc)
 target_link_libraries(export_map_from_atlas ${PROJECT_NAME})
