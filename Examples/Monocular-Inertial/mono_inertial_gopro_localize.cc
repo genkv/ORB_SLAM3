@@ -30,6 +30,7 @@
 #include <System.h>
 
 #include <json.h>
+#include <CLI11.hpp>
 
 using namespace std;
 using nlohmann::json;
@@ -133,24 +134,53 @@ void draw_gripper_mask(cv::Mat &img){
 
 
 int main(int argc, char **argv) {
-  if (argc != 8) {
-    cerr << endl
-         << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output use_viewer enable_mapping"
-         << endl;
-    return 1;
+  CLI::App app{"App description"};
+
+  std::string vocabulary = "../../Vocabulary/ORBvoc.txt";
+  app.add_option("-v,--vocabulary", vocabulary)->capture_default_str();
+
+  std::string settings = "gopro10_maxlens_fisheye_localize.yaml";
+  app.add_option("-s,--settings", settings)->capture_default_str();
+
+  std::string input_video;
+  app.add_option("-i,--input_video", input_video)->required();
+
+  std::string input_imu_json;
+  app.add_option("-j,--input_imu_json", input_imu_json)->required();
+
+  std::string output_tum;
+  app.add_option("-o,--output_tum", output_tum)->required();
+
+  bool disable_gui = false;
+  app.add_flag("-g,--disable_gui", disable_gui);
+
+  bool disable_mapping = false;
+  app.add_flag("-m,--disable_mapping", disable_mapping);
+
+  try {
+    app.parse(argc, argv);
+  } catch (const CLI::ParseError &e) {
+      return app.exit(e);
   }
+
+  // if (argc != 8) {
+  //   cerr << endl
+  //        << "Usage: ./mono_inertial_gopro_vi path_to_vocabulary path_to_settings path_to_video path_to_telemetry path_to_tum_output use_viewer enable_mapping"
+  //        << endl;
+  //   return 1;
+  // }
 
   cv::setNumThreads(4);
 
   vector<double> imuTimestamps;
   vector<double> camTimestamps;
   vector<cv::Point3f> vAcc, vGyr;
-  LoadTelemetry(argv[4], imuTimestamps, camTimestamps, vAcc, vGyr);
+  LoadTelemetry(input_imu_json, imuTimestamps, camTimestamps, vAcc, vGyr);
 
   // open settings to get image resolution
-  cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
+  cv::FileStorage fsSettings(settings, cv::FileStorage::READ);
   if(!fsSettings.isOpened()) {
-     cerr << "Failed to open settings file at: " << argv[2] << endl;
+     cerr << "Failed to open settings file at: " << settings << endl;
      exit(-1);
   }
   cv::Size img_size(fsSettings["Camera.width"],fsSettings["Camera.height"]);
@@ -160,24 +190,22 @@ int main(int argc, char **argv) {
   vector<double> vTimestamps;
   // Create SLAM system. It initializes all system threads and gets ready to
   // process frames.
-  bool use_viewer = atoi(argv[6]);
-  bool enable_mapping = atoi(argv[7]);
 
-  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_MONOCULAR, use_viewer);
+  ORB_SLAM3::System SLAM(vocabulary, settings, ORB_SLAM3::System::IMU_MONOCULAR, !disable_gui);
   // localization only
-  if (!enable_mapping){
+  if (disable_mapping){
     SLAM.ActivateLocalizationMode();
   }
 
   // open file stream for saving TUM trajectory
-  cout << endl << "Saving camera trajectory to " << argv[5] << " ..." << endl;
+  cout << endl << "Saving camera trajectory to " << output_tum << " ..." << endl;
   ofstream f;
-  f.open(argv[5]);
+  f.open(output_tum);
   f << fixed;
 
   // Vector for tracking time statistics
   vector<float> vTimesTrack;
-  cv::VideoCapture cap(argv[3]);
+  cv::VideoCapture cap(input_video);
   // Check if camera opened successfully
   if (!cap.isOpened()) {
     std::cout << "Error opening video stream or file" << endl;
