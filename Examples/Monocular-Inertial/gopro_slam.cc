@@ -147,8 +147,8 @@ int main(int argc, char **argv) {
   std::string save_map;
   app.add_option("--save_map", save_map);
 
-  bool disable_gui = false;
-  app.add_flag("-g,--disable_gui", disable_gui);
+  bool enable_gui = false;
+  app.add_flag("-g,--enable_gui", enable_gui);
 
   try {
     app.parse(argc, argv);
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
   ORB_SLAM3::System SLAM(
     vocabulary, settings, 
     ORB_SLAM3::System::IMU_MONOCULAR, 
-    !disable_gui, load_map, save_map
+    enable_gui, load_map, save_map
   );
 
   // Vector for tracking time statistics
