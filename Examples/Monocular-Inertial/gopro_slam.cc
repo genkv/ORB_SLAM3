@@ -124,8 +124,8 @@ int main(int argc, char **argv) {
   std::string vocabulary = "../../Vocabulary/ORBvoc.txt";
   app.add_option("-v,--vocabulary", vocabulary)->capture_default_str();
 
-  std::string settings = "gopro10_maxlens_fisheye_setting_v1.yaml";
-  app.add_option("-s,--settings", settings)->capture_default_str();
+  std::string setting = "gopro10_maxlens_fisheye_setting_v1.yaml";
+  app.add_option("-s,--setting", setting)->capture_default_str();
 
   std::string input_video;
   app.add_option("-i,--input_video", input_video)->required();
@@ -174,10 +174,10 @@ int main(int argc, char **argv) {
   vector<cv::Point3f> vAcc, vGyr;
   LoadTelemetry(input_imu_json, imuTimestamps, camTimestamps, vAcc, vGyr);
 
-  // open settings to get image resolution
-  cv::FileStorage fsSettings(settings, cv::FileStorage::READ);
+  // open setting to get image resolution
+  cv::FileStorage fsSettings(setting, cv::FileStorage::READ);
   if(!fsSettings.isOpened()) {
-     cerr << "Failed to open settings file at: " << settings << endl;
+     cerr << "Failed to open setting file at: " << setting << endl;
      exit(-1);
   }
   cv::Size img_size(fsSettings["Camera.width"],fsSettings["Camera.height"]);
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
   // process frames.
 
   ORB_SLAM3::System SLAM(
-    vocabulary, settings, 
+    vocabulary, setting, 
     ORB_SLAM3::System::IMU_MONOCULAR, 
     enable_gui, load_map, save_map
   );
