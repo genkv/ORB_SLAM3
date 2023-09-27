@@ -646,7 +646,7 @@ void System::SaveTrajectoryCSV(const string &filename)
     f << fixed;
 
     // add header
-    f << "frame_idx,timestamp,is_lost,x,y,z,q_x,q_y,q_z,q_w" << endl;
+    f << "frame_idx,timestamp,is_lost,is_keyframe,x,y,z,q_x,q_y,q_z,q_w" << endl;
 
     // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
     // We need to get first the keyframe pose and then concatenate the relative transformation.
@@ -669,7 +669,7 @@ void System::SaveTrajectoryCSV(const string &filename)
         
         if (*iter_is_lost){
             // tracking lost, write all zero for position and rotation
-            f << "true" << ',';
+            f << "true,false,";
             f << "0,0,0,0,0,0,0" << endl;
             continue;
         }
@@ -689,10 +689,12 @@ void System::SaveTrajectoryCSV(const string &filename)
         {
             // deal with corner case where parent kf is from another map
             cout << "--Parent KF is from another map" << endl;
-            f << "true" << ',';
+            f << "true,false,";
             f << "0,0,0,0,0,0,0" << endl;
             continue;
         }
+
+        bool is_keyframe = (pKF->mTimeStamp == *iter_timestamp);
 
         Trw = Trw * pKF->GetPose() * Two;
 
@@ -703,7 +705,12 @@ void System::SaveTrajectoryCSV(const string &filename)
         Eigen::Quaternionf q = Twc.unit_quaternion();
 
         // Write regular data
-        f << "false" << ',';
+        f << "false,";
+        if (is_keyframe) {
+            f << "true,";
+        } else {
+            f << "false,";
+        }
         f << setprecision(9) << twc(0) << ',' << twc(1) << ',' << twc(2) << ',';
         f << setprecision(9) << q.x() << ',' << q.y() << ',' << q.z() << ',' << q.w() << endl;
     }
