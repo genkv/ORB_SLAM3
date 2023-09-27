@@ -80,12 +80,7 @@ bool LoadTelemetry(const string &path_to_telemetry_file,
     return true;
 }
 
-void draw_gripper_mask(cv::Mat &img){
-  // arguments
-  double height = 0.37;
-  double top_width = 0.25;
-  double bottom_width = 1.4;
-
+void draw_gripper_mask(cv::Mat &img, double height=0.37, double top_width=0.25, double bottom_width=1.4){
   // image size
   double img_h = img.rows;
   double img_w = img.cols;
@@ -139,7 +134,10 @@ int main(int argc, char **argv) {
   app.add_option("-j,--input_imu_json", input_imu_json)->required();
 
   std::string output_trajectory_tum;
-  app.add_option("-o,--output_trajectory_tum", output_trajectory_tum)->required();
+  app.add_option("--output_trajectory_tum", output_trajectory_tum);
+
+  std::string output_trajectory_csv;
+  app.add_option("-o,--output_trajectory_csv", output_trajectory_csv);
 
   std::string load_map;
   app.add_option("-l,--load_map", load_map);
@@ -150,6 +148,18 @@ int main(int argc, char **argv) {
   bool enable_gui = false;
   app.add_flag("-g,--enable_gui", enable_gui);
 
+  int num_threads = 4;
+  app.add_flag("-n,--num_threads", num_threads);
+
+  double mask_height = 0.37;
+  app.add_option("--mask_height", mask_height);
+
+  double mask_top_width = 0.25;
+  app.add_option("--mask_top_width", mask_top_width);
+
+  double mask_bottom_width = 1.4;
+  app.add_option("--mask_bottom_width", mask_bottom_width);
+
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
@@ -157,7 +167,7 @@ int main(int argc, char **argv) {
   }
 
 
-  cv::setNumThreads(4);
+  cv::setNumThreads(num_threads);
 
   vector<double> imuTimestamps;
   vector<double> camTimestamps;
@@ -220,7 +230,7 @@ int main(int argc, char **argv) {
     ++img_id;
 
     cv::resize(im_track, im_track, img_size);
-    draw_gripper_mask(im_track);
+    draw_gripper_mask(im_track, mask_height, mask_top_width, mask_bottom_width);
 
     // gather imu measurements between frames
     // Load imu measurements from previous frame
@@ -269,6 +279,10 @@ int main(int argc, char **argv) {
   // Save camera trajectory
   if (!output_trajectory_tum.empty()) {
     SLAM.SaveTrajectoryTUM(output_trajectory_tum);
+  }
+
+  if (!output_trajectory_csv.empty()) {
+    SLAM.SaveTrajectoryCSV(output_trajectory_csv);
   }
 
   return 0;

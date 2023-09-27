@@ -608,6 +608,109 @@ bool System::isShutDown() {
     return mbShutDown;
 }
 
+void System::SaveTrajectoryCSV(const string &filename)
+{
+    cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
+    if(mSensor==MONOCULAR)
+    {
+        cerr << "ERROR: SaveTrajectoryCSV cannot be used for monocular." << endl;
+        return;
+    }
+
+    // Select the appropriate Map
+    vector<Map*> vpMaps = mpAtlas->GetAllMaps();
+    int numMaxKFs = 0;
+    Map* pBiggerMap;
+    std::cout << "There are " << std::to_string(vpMaps.size()) << " maps in the atlas" << std::endl;
+    for(Map* pMap :vpMaps)
+    {
+        std::cout << "  Map " << std::to_string(pMap->GetId()) << " has " << std::to_string(pMap->GetAllKeyFrames().size()) << " KFs" << std::endl;
+        if(pMap->GetAllKeyFrames().size() > numMaxKFs)
+        {
+            numMaxKFs = pMap->GetAllKeyFrames().size();
+            pBiggerMap = pMap;
+        }
+    }
+
+    vector<KeyFrame*> vpKFs = pBiggerMap->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
+
+    // open file
+    ofstream f;
+    f.open(filename.c_str());
+    // Sets the floatfield format flag for the str stream to fixed.
+    f << fixed;
+
+    // add header
+    f << "frame_idx,timestamp,is_lost,x,y,z,q_x,q_y,q_z,q_w" << endl;
+
+    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
+    // We need to get first the keyframe pose and then concatenate the relative transformation.
+    // Frames not localized (tracking failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+    // which is true when tracking failed (lbL).
+    list<ORB_SLAM3::KeyFrame*>::iterator iter_reference_keyframe = mpTracker->mlpReferences.begin();
+    list<double>::iterator iter_timestamp = mpTracker->mlFrameTimes.begin();
+    list<bool>::iterator iter_is_lost = mpTracker->mlbLost.begin();
+    int frame_idx = 0;
+    for(list<Sophus::SE3f>::iterator iter_relative_pose=mpTracker->mlRelativeFramePoses.begin(),
+            iter_end=mpTracker->mlRelativeFramePoses.end();
+        iter_relative_pose!=iter_end;
+        iter_relative_pose++, iter_reference_keyframe++, iter_timestamp++, iter_is_lost++, frame_idx++)
+    {
+        // write frame_idx, timestamp
+        f << frame_idx << ',';
+        f << setprecision(6) << *iter_timestamp << ',';
+        
+        if (*iter_is_lost){
+            // tracking lost, write all zero for position and rotation
+            f << "true" << ',';
+            f << "0,0,0,0,0,0,0" << endl;
+            continue;
+        }
+
+        
+        KeyFrame* pKF = *iter_reference_keyframe;
+        Sophus::SE3f Trw;
+
+        // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
+        while(pKF->isBad())
+        {
+            Trw = Trw * pKF->mTcp;
+            pKF = pKF->GetParent();
+        }
+
+        if(!pKF || pKF->GetMap() != pBiggerMap)
+        {
+            // deal with corner case where parent kf is from another map
+            cout << "--Parent KF is from another map" << endl;
+            f << "true" << ',';
+            f << "0,0,0,0,0,0,0" << endl;
+            continue;
+        }
+
+        Trw = Trw * pKF->GetPose() * Two;
+
+        Sophus::SE3f Tcw = (*iter_relative_pose) * Trw;
+        Sophus::SE3f Twc = Tcw.inverse();
+
+        Eigen::Vector3f twc = Twc.translation();
+        Eigen::Quaternionf q = Twc.unit_quaternion();
+
+        // Write regular data
+        f << "false" << ',';
+        f << setprecision(9) << twc(0) << ',' << twc(1) << ',' << twc(2) << ',';
+        f << setprecision(9) << q.x() << ',' << q.y() << ',' << q.z() << ',' << q.w() << endl;
+    }
+    f.close();
+    cout << endl << "CSV camera trajectory saved!" << endl;
+}
+
 void System::SaveTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
