@@ -425,7 +425,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
             mpTracker->GrabImuData(vImuMeas[i_imu]);
 
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
-    cout << "mState " << mpTracker->mState << endl;
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
@@ -503,7 +502,6 @@ std::pair<Sophus::SE3f, bool> System::LocalizeMonocular(const cv::Mat &im, const
 
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
     int trackingState = mpTracker->mState;
-    cout << "mState " << trackingState << endl;
     // has tracking for OK and RECENTLY_LOST state.
     // bool has_tracking = (trackingState == 2) || (trackingState == 3);
     bool has_tracking = trackingState == 2;

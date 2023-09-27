@@ -183,7 +183,6 @@ int main(int argc, char **argv) {
   cv::Size img_size(fsSettings["Camera.width"],fsSettings["Camera.height"]);
   fsSettings.release();
 
-  // Retrieve paths to images
   vector<double> vTimestamps;
   // Create SLAM system. It initializes all system threads and gets ready to
   // process frames.
@@ -194,41 +193,35 @@ int main(int argc, char **argv) {
     enable_gui, load_map, save_map
   );
 
-  // Vector for tracking time statistics
-  vector<float> vTimesTrack;
-  cv::VideoCapture cap(input_video);
-  // Check if camera opened successfully
+  // Open video file
+  cv::VideoCapture cap(input_video, cv::CAP_FFMPEG);
   if (!cap.isOpened()) {
     std::cout << "Error opening video stream or file" << endl;
     return -1;
   }
 
   // Main loop
-  int img_id = 0;
   int nImages = cap.get(cv::CAP_PROP_FRAME_COUNT);
   double fps = cap.get(cv::CAP_PROP_FPS);
-  double frame_diff_s = 1./fps;
-  double prev_tframe = -100.;
+  cout << "Video opened using backend " << cap.getBackendName() << endl;
+  cout << "There are " << nImages << " frames in total" << endl;
+  cout << "video FPS " << fps << endl;
+  
   std::vector<ORB_SLAM3::IMU::Point> vImuMeas;
   size_t last_imu_idx = 0;
-  while (1) {
+  for (int frame_idx=0; frame_idx < nImages; frame_idx++){
+    double tframe = (double)frame_idx / fps;
+
+    // read frame from video
     cv::Mat im,im_track;
     bool success = cap.read(im);
-
     if (!success) {
+      cout << "cap.read failed!" << endl;
       break;
     }
+
+    // resize image and draw gripper mask
     im_track = im.clone();
-    double tframe = cap.get(cv::CAP_PROP_POS_MSEC) * MS_TO_S;
-
-    // tframe goes to 0 sometimes after video ends;
-    if (tframe < prev_tframe) {
-      break;
-    }
-    prev_tframe = tframe;
-
-    ++img_id;
-
     cv::resize(im_track, im_track, img_size);
     draw_gripper_mask(im_track, mask_height, mask_top_width, mask_bottom_width);
 
@@ -256,25 +249,15 @@ int main(int argc, char **argv) {
         std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
             .count();
 
-    if (img_id % 100 == 0) {
-      std::cout<<"Video FPS: "<<1./frame_diff_s<<"\n";
+    if (frame_idx % 100 == 0) {
+      std::cout<<"Video FPS: "<<fps<<"\n";
       std::cout<<"ORB-SLAM 3 running at: "<<1./ttrack<< " FPS\n";
     }
-    vTimesTrack.push_back(ttrack);
   }
 
   // Stop all threads
   SLAM.Shutdown();
 
-  // Tracking time statistics
-  sort(vTimesTrack.begin(), vTimesTrack.end());
-  float totaltime = 0;
-  for (auto ni = 0; ni < vTimestamps.size(); ni++) {
-    totaltime += vTimesTrack[ni];
-  }
-  cout << "-------" << endl << endl;
-  cout << "median tracking time: " << vTimesTrack[nImages / 2] << endl;
-  cout << "mean tracking time: " << totaltime / nImages << endl;
 
   // Save camera trajectory
   if (!output_trajectory_tum.empty()) {
