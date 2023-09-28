@@ -1810,6 +1810,13 @@ void Tracking::Track()
     {
         cout << "TRACK: Reset map because local mapper set the bad imu flag " << endl;
         mpSystem->ResetActiveMap();
+
+        // logging before return
+        mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+        mlpReferences.push_back(mlpReferences.back());
+        mlFrameTimes.push_back(mlFrameTimes.back());
+        mlbLost.push_back(true);
+        mlState.push_back(mState);
         return;
     }
 
@@ -1829,6 +1836,12 @@ void Tracking::Track()
             unique_lock<mutex> lock(mMutexImuQueue);
             mlQueueImuData.clear();
             CreateMapInAtlas();
+            // logging before return
+            mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+            mlpReferences.push_back(mlpReferences.back());
+            mlFrameTimes.push_back(mlFrameTimes.back());
+            mlbLost.push_back(true);
+            mlState.push_back(mState);
             return;
         }
         else if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
@@ -1855,6 +1868,13 @@ void Tracking::Track()
                     cout << "Timestamp jump detected, before IMU initialization. Reseting..." << endl;
                     mpSystem->ResetActiveMap();
                 }
+
+                // logging before return
+                mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+                mlpReferences.push_back(mlpReferences.back());
+                mlFrameTimes.push_back(mlFrameTimes.back());
+                mlbLost.push_back(true);
+                mlState.push_back(mState);
                 return;
             }
 
@@ -1935,6 +1955,13 @@ void Tracking::Track()
         if(mState!=OK) // If rightly initialized, mState=OK
         {
             mLastFrame = Frame(mCurrentFrame);
+
+            // initialization failed. still record the frames.
+            mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+            mlpReferences.push_back(mlpReferences.back());
+            mlFrameTimes.push_back(mlFrameTimes.back());
+            mlbLost.push_back(true);
+            mlState.push_back(mState);
             return;
         }
 
@@ -2049,6 +2076,12 @@ void Tracking::Track()
 
                     Verbose::PrintMess("done", Verbose::VERBOSITY_NORMAL);
 
+                    // logging before return
+                    mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+                    mlpReferences.push_back(mlpReferences.back());
+                    mlFrameTimes.push_back(mlFrameTimes.back());
+                    mlbLost.push_back(true);
+                    mlState.push_back(mState);
                     return;
                 }
                 else if (mState == INIT_RELOCALIZE)
@@ -2353,6 +2386,13 @@ void Tracking::Track()
             if(pCurrentMap->KeyFramesInMap()<=10)
             {
                 mpSystem->ResetActiveMap();
+
+                // logging before return
+                mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+                mlpReferences.push_back(mlpReferences.back());
+                mlFrameTimes.push_back(mlFrameTimes.back());
+                mlbLost.push_back(true);
+                mlState.push_back(mState);
                 return;
             }
             if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
@@ -2360,11 +2400,24 @@ void Tracking::Track()
                 {
                     Verbose::PrintMess("Track lost before IMU initialisation, reseting...", Verbose::VERBOSITY_QUIET);
                     mpSystem->ResetActiveMap();
+
+                    // logging before return
+                    mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+                    mlpReferences.push_back(mlpReferences.back());
+                    mlFrameTimes.push_back(mlFrameTimes.back());
+                    mlbLost.push_back(true);
+                    mlState.push_back(mState);
                     return;
                 }
 
             CreateMapInAtlas();
 
+            // logging before return
+            mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+            mlpReferences.push_back(mlpReferences.back());
+            mlFrameTimes.push_back(mlFrameTimes.back());
+            mlbLost.push_back(true);
+            mlState.push_back(mState);
             return;
         }
 
@@ -2375,27 +2428,25 @@ void Tracking::Track()
     }
 
 
-
-    if(mState==OK || mState==RECENTLY_LOST)
+    // Store frame pose information to retrieve the complete camera trajectory afterwards.
+    bool is_lost = !(mState==OK || mState==RECENTLY_LOST);
+    if(is_lost && mCurrentFrame.isSet())
     {
-        // Store frame pose information to retrieve the complete camera trajectory afterwards.
-        if(mCurrentFrame.isSet())
-        {
-            Sophus::SE3f Tcr_ = mCurrentFrame.GetPose() * mCurrentFrame.mpReferenceKF->GetPoseInverse();
-            mlRelativeFramePoses.push_back(Tcr_);
-            mlpReferences.push_back(mCurrentFrame.mpReferenceKF);
-            mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
-            mlbLost.push_back(mState==LOST);
-        }
-        else
-        {
-            // This can happen if tracking is lost
-            mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
-            mlpReferences.push_back(mlpReferences.back());
-            mlFrameTimes.push_back(mlFrameTimes.back());
-            mlbLost.push_back(mState==LOST);
-        }
-
+        Sophus::SE3f Tcr_ = mCurrentFrame.GetPose() * mCurrentFrame.mpReferenceKF->GetPoseInverse();
+        mlRelativeFramePoses.push_back(Tcr_);
+        mlpReferences.push_back(mCurrentFrame.mpReferenceKF);
+        mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
+        mlbLost.push_back(is_lost);
+        mlState.push_back(mState);
+    }
+    else
+    {
+        // This can happen if tracking is lost
+        mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
+        mlpReferences.push_back(mlpReferences.back());
+        mlFrameTimes.push_back(mlFrameTimes.back());
+        mlbLost.push_back(is_lost);
+        mlState.push_back(mState);
     }
 
 #ifdef REGISTER_LOOP

@@ -154,6 +154,7 @@ public:
     list<KeyFrame*> mlpReferences;
     list<double> mlFrameTimes;
     list<bool> mlbLost;
+    list<eTrackingState> mlState;
 
     // frames with estimated pose
     int mTrackedFr;
