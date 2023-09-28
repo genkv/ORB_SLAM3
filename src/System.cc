@@ -644,7 +644,7 @@ void System::SaveTrajectoryCSV(const string &filename)
     f << fixed;
 
     // add header
-    f << "frame_idx,timestamp,is_lost,is_keyframe,x,y,z,q_x,q_y,q_z,q_w" << endl;
+    f << "frame_idx,timestamp,state,is_lost,is_keyframe,x,y,z,q_x,q_y,q_z,q_w" << endl;
 
     // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
     // We need to get first the keyframe pose and then concatenate the relative transformation.
@@ -655,15 +655,17 @@ void System::SaveTrajectoryCSV(const string &filename)
     list<ORB_SLAM3::KeyFrame*>::iterator iter_reference_keyframe = mpTracker->mlpReferences.begin();
     list<double>::iterator iter_timestamp = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator iter_is_lost = mpTracker->mlbLost.begin();
+    list<Tracking::eTrackingState>::iterator iter_state = mpTracker->mlState.begin();
     int frame_idx = 0;
     for(list<Sophus::SE3f>::iterator iter_relative_pose=mpTracker->mlRelativeFramePoses.begin(),
             iter_end=mpTracker->mlRelativeFramePoses.end();
         iter_relative_pose!=iter_end;
-        iter_relative_pose++, iter_reference_keyframe++, iter_timestamp++, iter_is_lost++, frame_idx++)
+        iter_relative_pose++, iter_reference_keyframe++, iter_timestamp++, iter_is_lost++, iter_state++, frame_idx++)
     {
         // write frame_idx, timestamp
         f << frame_idx << ',';
         f << setprecision(6) << *iter_timestamp << ',';
+        f << *iter_state << ',';
         
         if (*iter_is_lost){
             // tracking lost, write all zero for position and rotation
