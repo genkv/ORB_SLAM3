@@ -2430,7 +2430,7 @@ void Tracking::Track()
 
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
     bool is_lost = !(mState==OK || mState==RECENTLY_LOST);
-    if(is_lost && mCurrentFrame.isSet())
+    if(!is_lost && mCurrentFrame.isSet())
     {
         Sophus::SE3f Tcr_ = mCurrentFrame.GetPose() * mCurrentFrame.mpReferenceKF->GetPoseInverse();
         mlRelativeFramePoses.push_back(Tcr_);
