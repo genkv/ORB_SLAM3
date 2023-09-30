@@ -26,6 +26,7 @@
 
 #include<mutex>
 #include<chrono>
+#include<exception>
 
 namespace ORB_SLAM3
 {
@@ -63,6 +64,7 @@ void LocalMapping::SetTracker(Tracking *pTracker)
 
 void LocalMapping::Run()
 {
+// try {
     mbFinished = false;
 
     while(1)
@@ -285,6 +287,12 @@ void LocalMapping::Run()
     }
 
     SetFinish();
+// } catch (const std::exception& ex) {
+//     cerr << "Exception in LocalMapping::Run!" << endl;
+//     cerr << ex.what() << endl;
+//     std::terminate();
+// }
+
 }
 
 void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
