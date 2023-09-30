@@ -298,11 +298,6 @@ public:
 
     int mnDataset;
 
-#ifdef REGISTER_TIMES
-    double mTimeORB_Ext;
-    double mTimeStereoMatch;
-#endif
-
 private:
 
     // Undistort keypoints given OpenCV distortion parameters.
