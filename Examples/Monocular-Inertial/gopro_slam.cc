@@ -23,6 +23,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <signal.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -35,6 +36,12 @@
 using namespace std;
 using nlohmann::json;
 const double MS_TO_S = 1e-3; ///< Milliseconds to second conversion
+
+void signal_callback_handler(int signum) {
+   cout << "gopro_slam.cc Caught signal " << signum << endl;
+   // Terminate program
+   exit(signum);
+}
 
 bool LoadTelemetry(const string &path_to_telemetry_file,
                    vector<double> &vTimeStamps,
@@ -118,6 +125,15 @@ void draw_gripper_mask(cv::Mat &img, double height=0.37, double top_width=0.25, 
 
 
 int main(int argc, char **argv) {
+  // Register signal and signal handler
+  // A process running as PID 1 inside a container 
+  // is treated specially by Linux: it ignores any 
+  // signal with the default action. As a result, 
+  // the process will not terminate on SIGINT or 
+  // SIGTERM unless it is coded to do so.
+  // This allows stopping the docker container with ctrl-c
+  signal(SIGINT, signal_callback_handler);
+
   // CLI parsing
   CLI::App app{"GoPro SLAM"};
 
