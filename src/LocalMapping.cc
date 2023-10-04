@@ -960,7 +960,7 @@ void LocalMapping::KeyFrameCulling()
                 if(pKF->mnId>(mpCurrentKeyFrame->mnId-2))
                     continue;
 
-                if(pKF->mPrevKF && pKF->mNextKF)
+                if(pKF->mPrevKF && pKF->mpImuPreintegrated && pKF->mNextKF && pKF->mNextKF->mpImuPreintegrated)
                 {
                     const float t = pKF->mNextKF->mTimeStamp-pKF->mPrevKF->mTimeStamp;
 
