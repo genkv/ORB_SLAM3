@@ -1665,7 +1665,10 @@ void Tracking::Track()
 
                         // update timestamps
                         cout << "vpKFs.back()->mpImuPreintegrated" << vpKFs.back()->mpImuPreintegrated << endl;
-                        double dt = vpKFs.back()->mpImuPreintegrated->dT;
+                        double dt = 1.0 / 59.97;
+                        if (vpKFs.back()->mpImuPreintegrated != nullptr){
+                            double dt = vpKFs.back()->mpImuPreintegrated->dT;
+                        }
                         double t_offset = - vpKFs.back()->mTimeStamp - dt;
                         for (auto kf : vpKFs) {
                             kf->mTimeStamp += t_offset;
