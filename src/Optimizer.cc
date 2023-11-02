@@ -2835,13 +2835,16 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
         }
     }
 
+    // Cheng removing this check (mit->second<3) seems to not affect result.
     //cout << "Total map points: " << lLocalMapPoints.size() << endl;
-    for(map<int,int>::iterator mit=mVisEdges.begin(), mend=mVisEdges.end(); mit!=mend; mit++)
-    {
-        if (mit->second<3) {
-            throw std::runtime_error("LocalInertialBA failed mit->second<3");
-        }
-    }
+    // for(map<int,int>::iterator mit=mVisEdges.begin(), mend=mVisEdges.end(); mit!=mend; mit++)
+    // {
+    //     std::cout << " mnId:" << mit->first << " mVisEdges:" << mit->second << endl;
+    //     if (mit->second<3) {
+    //         std::cout << "curr_mnId:" << pKF->mnId << " mnId:" << mit->first << " mVisEdges:" << mit->second << endl;
+    //         // throw std::runtime_error("LocalInertialBA failed mit->second<3");
+    //     }
+    // }
 
     optimizer.initializeOptimization();
     optimizer.computeActiveErrors();
