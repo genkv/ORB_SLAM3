@@ -1519,7 +1519,7 @@ void Tracking::Track()
             MonocularInitialization();
         }
 
-        //mpFrameDrawer->Update(this);
+        mpFrameDrawer->Update(this);
 
         if(mState!=OK) // If rightly initialized, mState=OK
         {
@@ -2106,7 +2106,6 @@ void Tracking::StereoInitialization()
 
 void Tracking::MonocularInitialization()
 {
-
     if(!mbReadyToInitializate)
     {
         // Set Reference Frame
@@ -2133,7 +2132,6 @@ void Tracking::MonocularInitialization()
             }
 
             mbReadyToInitializate = true;
-
             return;
         }
     }
@@ -2148,7 +2146,7 @@ void Tracking::MonocularInitialization()
 
         // Find correspondences
         ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,300);
 
         // Check if there are enough correspondences
         if(nmatches<50)
@@ -2178,7 +2176,7 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
         } else {
-            std::cout << 'ReconstructWithTwoViews Failed' << std::endl;
+            std::cout << "ReconstructWithTwoViews Failed" << std::endl;
         }
     }
 }
