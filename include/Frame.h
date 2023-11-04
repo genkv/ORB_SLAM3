@@ -35,6 +35,7 @@
 
 #include <mutex>
 #include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
 
 #include "Eigen/Core"
 #include "sophus/se3.hpp"
@@ -227,6 +228,10 @@ public:
     // In the RGB-D case, RGB images can be distorted.
     std::vector<cv::KeyPoint> mvKeys, mvKeysRight;
     std::vector<cv::KeyPoint> mvKeysUn;
+
+    // ArUcO marker detection (for initialization)
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 
     // Corresponding stereo coordinate and depth for each keypoint.
     std::vector<MapPoint*> mvpMapPoints;
