@@ -183,6 +183,9 @@ protected:
     //void CreateNewMapPoints();
     void CreateInitialMapMonocular();
 
+    // Tag aided monocular initialization
+    void TagAidedMonocularInitialization();
+
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
     void UpdateLastFrame();

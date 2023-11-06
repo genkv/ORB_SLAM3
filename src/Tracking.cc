@@ -1516,7 +1516,7 @@ void Tracking::Track()
         }
         else
         {
-            MonocularInitialization();
+            TagAidedMonocularInitialization();
         }
 
         mpFrameDrawer->Update(this);
@@ -2179,6 +2179,105 @@ void Tracking::MonocularInitialization()
             std::cout << "ReconstructWithTwoViews Failed" << std::endl;
         }
     }
+}
+
+
+void Tracking::TagAidedMonocularInitialization()
+{
+    if(!mbReadyToInitializate)
+    {
+        // Set Reference Frame
+        if(mCurrentFrame.mvKeys.size()>100)
+        {
+
+            mInitialFrame = Frame(mCurrentFrame);
+            mLastFrame = Frame(mCurrentFrame);
+            mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
+            for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
+                mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
+
+            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+
+            if (mSensor == System::IMU_MONOCULAR)
+            {
+                if(mpImuPreintegratedFromLastKF)
+                {
+                    delete mpImuPreintegratedFromLastKF;
+                }
+                mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
+                mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
+
+            }
+
+            mbReadyToInitializate = true;
+            return;
+        }
+    }
+    else
+    {
+        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>1.0)))
+        {
+            mbReadyToInitializate = false;
+            std::cout << "Failed to init: n_keypoints " << (int)mCurrentFrame.mvKeys.size() << " time_since_init_frame" << mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp << std::endl;
+            return;
+        }
+
+        // Find correspondences
+        ORBmatcher matcher(0.9,true);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,300);
+
+        // Check if there are enough correspondences
+        if(nmatches<50)
+        {
+            mbReadyToInitializate = false;
+            std::cout << "Failed to init: nmatches " << nmatches << std::endl;
+            return;
+        }
+
+        Sophus::SE3f Tcw;
+        vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
+
+        bool reconstruct_success = false;
+        if (mpCamera->ReconstructWithTwoViewsAndTags(
+            mInitialFrame.markerIds,
+            mCurrentFrame.markerIds,
+            mInitialFrame.markerCorners,
+            mCurrentFrame.markerCorners,
+            mInitialFrame.mvKeysUn,
+            mCurrentFrame.mvKeysUn,
+            mvIniMatches,
+            Tcw,
+            mvIniP3D,
+            vbTriangulated
+        )){
+            reconstruct_success = true;
+            std::cout << "ReconstructWithTwoViewsAndTags Succeded" << std::endl;
+        } else if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Tcw,mvIniP3D,vbTriangulated))
+        {
+            reconstruct_success = true;
+            std::cout << "ReconstructWithTwoViews Succeded" << std::endl;
+        } else {
+            std::cout << "ReconstructWithTwoViews Failed" << std::endl;
+        }
+
+        if (reconstruct_success) {
+            for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
+            {
+                if(mvIniMatches[i]>=0 && !vbTriangulated[i])
+                {
+                    mvIniMatches[i]=-1;
+                    nmatches--;
+                }
+            }
+
+            // Set Frame Poses
+            mInitialFrame.SetPose(Sophus::SE3f());
+            mCurrentFrame.SetPose(Tcw);
+
+            CreateInitialMapMonocular();
+        }
+    }
+
 }
 
 
