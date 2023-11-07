@@ -2237,8 +2237,16 @@ void Tracking::TagAidedMonocularInitialization()
         Sophus::SE3f Tcw;
         vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
 
-        bool reconstruct_success = false;
-        if (mpCamera->ReconstructWithTwoViewsAndTags(
+        bool init_success = mpCamera->ReconstructWithTwoViews(
+            mInitialFrame.mvKeysUn,
+            mCurrentFrame.mvKeysUn,
+            mvIniMatches,
+            Tcw,
+            mvIniP3D,
+            vbTriangulated
+        );
+
+        bool tag_init_success = mpCamera->ReconstructWithTwoViewsAndTags(
             mInitialFrame.markerIds,
             mCurrentFrame.markerIds,
             mInitialFrame.markerCorners,
@@ -2249,16 +2257,10 @@ void Tracking::TagAidedMonocularInitialization()
             Tcw,
             mvIniP3D,
             vbTriangulated
-        )){
-            reconstruct_success = true;
-            std::cout << "ReconstructWithTwoViewsAndTags Succeded" << std::endl;
-        } else if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Tcw,mvIniP3D,vbTriangulated))
-        {
-            reconstruct_success = true;
-            std::cout << "ReconstructWithTwoViews Succeded" << std::endl;
-        } else {
-            std::cout << "ReconstructWithTwoViews Failed" << std::endl;
-        }
+        );
+
+        bool reconstruct_success = init_success && tag_init_success;
+        std::cout << "init_success=" << init_success << " tag_init_success" << tag_init_success << endl;
 
         if (reconstruct_success) {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
