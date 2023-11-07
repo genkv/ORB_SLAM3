@@ -249,17 +249,23 @@ namespace ORB_SLAM3 {
 
         // localize tags
         cv::Mat distCoeffs = cv::Mat1f(5, 1);
-        std::vector<cv::Vec3f> rvecs1, tvecs1, rvecs2, tvecs2;
+        std::vector<cv::Vec3d> rvecs1, tvecs1, rvecs2, tvecs2;
         cv::aruco::estimatePoseSingleMarkers(tag1Corners, tag_size, K, distCoeffs, rvecs1, tvecs1);
         cv::aruco::estimatePoseSingleMarkers(tag2Corners, tag_size, K, distCoeffs, rvecs2, tvecs2);
+
+        // if result contains Nan, pose estimation has failed.
+        if (rvecs1[0][0] != rvecs1[0][0]) {return false;}
+        if (rvecs2[0][0] != rvecs2[0][0]) {return false;}
 
         // calculate relative pose
         cv::Mat R1w;
         cv::Rodrigues(rvecs1[0], R1w);
+        R1w.convertTo(R1w, CV_32F); // convert double to float, required
         Sophus::SE3f T1w(Converter::toMatrix3f(R1w), Converter::toVector3f(tvecs1[0]));
 
         cv::Mat R2w;
         cv::Rodrigues(rvecs2[0], R2w);
+        R2w.convertTo(R2w, CV_32F);
         Sophus::SE3f T2w(Converter::toMatrix3f(R2w), Converter::toVector3f(tvecs2[0]));
 
         T21 = T2w * T1w.inverse();
