@@ -2259,7 +2259,7 @@ void Tracking::TagAidedMonocularInitialization()
             vbTriangulated
         );
 
-        bool reconstruct_success = init_success && tag_init_success;
+        bool reconstruct_success = tag_init_success;
         std::cout << "init_success=" << init_success << " tag_init_success" << tag_init_success << endl;
 
         if (reconstruct_success) {
