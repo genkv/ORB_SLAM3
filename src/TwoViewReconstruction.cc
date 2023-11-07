@@ -205,8 +205,13 @@ namespace ORB_SLAM3
         float parallax;
 
         int nGood = CheckRT(R,t,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,mK,vP3D, 4.0*mSigma2,vbTriangulated, parallax);
+        if (nGood < 50) {
+            std::cout << "Reconstruct failed line 209 nGood=" << nGood << std::endl;
+            return false;
+        }
+
         if (parallax < 1.0){
-            std::cout << "Reconsturct failed line 410 parallax=" << parallax << std::endl;
+            std::cout << "Reconsturct failed line 213 parallax=" << parallax << std::endl;
             return false;
         }
         return true;
