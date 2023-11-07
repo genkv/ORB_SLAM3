@@ -308,6 +308,7 @@ protected:
     unsigned int mnLastInitFrameId;
 
     bool mbCreatedMap;
+    bool mbLoadedMap;
 
     //Motion Model
     bool mbVelocity{false};

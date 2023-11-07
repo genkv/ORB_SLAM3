@@ -1691,5 +1691,9 @@ string System::CalculateCheckSum(string filename, int type)
     return checksum;
 }
 
+bool System::isLoadingMap(){
+    return !mStrLoadAtlasFromFile.empty();
+}
+
 } //namespace ORB_SLAM
 

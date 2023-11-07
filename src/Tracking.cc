@@ -117,6 +117,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
             std::cout << " is unknown" << std::endl;
         }
     }
+    mbLoadedMap = pSys->isLoadingMap();
 }
 
 Tracking::~Tracking()
@@ -1794,7 +1795,12 @@ void Tracking::Track()
             }
             if(!bOK){
                 cout << "Fail to track local map!" << endl;
-                mState = INIT_RELOCALIZE;
+                if (mbLoadedMap){
+                    // if we loaded map from file, it means we are running relocalization
+                    // in that case we don't want to reset current map
+                    // instead we should try to relocalize
+                    mState = INIT_RELOCALIZE;
+                }
             }
         }
         else
@@ -2215,7 +2221,7 @@ void Tracking::TagAidedMonocularInitialization()
     }
     else
     {
-        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>1.0)))
+        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>0.3)))
         {
             mbReadyToInitializate = false;
             std::cout << "Failed to init: n_keypoints " << (int)mCurrentFrame.mvKeys.size() << " time_since_init_frame" << mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp << std::endl;
@@ -2237,7 +2243,7 @@ void Tracking::TagAidedMonocularInitialization()
         Sophus::SE3f Tcw;
         vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
 
-        bool init_success = mpCamera->ReconstructWithTwoViews(
+        bool reconstruct_success = mpCamera->ReconstructWithTwoViews(
             mInitialFrame.mvKeysUn,
             mCurrentFrame.mvKeysUn,
             mvIniMatches,
@@ -2245,22 +2251,22 @@ void Tracking::TagAidedMonocularInitialization()
             mvIniP3D,
             vbTriangulated
         );
-
-        bool tag_init_success = mpCamera->ReconstructWithTwoViewsAndTags(
-            mInitialFrame.markerIds,
-            mCurrentFrame.markerIds,
-            mInitialFrame.markerCorners,
-            mCurrentFrame.markerCorners,
-            mInitialFrame.mvKeysUn,
-            mCurrentFrame.mvKeysUn,
-            mvIniMatches,
-            Tcw,
-            mvIniP3D,
-            vbTriangulated
-        );
-
-        bool reconstruct_success = tag_init_success;
-        std::cout << "init_success=" << init_success << " tag_init_success" << tag_init_success << endl;
+        std::cout << "init_success=" << reconstruct_success << endl;
+        if (!reconstruct_success) {
+            reconstruct_success = mpCamera->ReconstructWithTwoViewsAndTags(
+                mInitialFrame.markerIds,
+                mCurrentFrame.markerIds,
+                mInitialFrame.markerCorners,
+                mCurrentFrame.markerCorners,
+                mInitialFrame.mvKeysUn,
+                mCurrentFrame.mvKeysUn,
+                mvIniMatches,
+                Tcw,
+                mvIniP3D,
+                vbTriangulated
+            );
+            std::cout << " tag_init_success=" << reconstruct_success << endl;
+        }
 
         if (reconstruct_success) {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)

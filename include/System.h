@@ -195,6 +195,7 @@ public:
     void ChangeDataset();
 
     float GetImageScale();
+    bool isLoadingMap();
 
 private:
 
