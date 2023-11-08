@@ -41,7 +41,10 @@ Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer,
                const string &load_atlas_path,
-               const string &save_atlas_path):
+               const string &save_atlas_path,
+               const cv::Ptr<cv::aruco::Dictionary> aruco_dict,
+               const int init_tag_id,
+               const float init_tag_size):
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
     mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
@@ -151,7 +154,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_);
+                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, 
+                             aruco_dict, init_tag_id, init_tag_size);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor==MONOCULAR || mSensor==IMU_MONOCULAR,

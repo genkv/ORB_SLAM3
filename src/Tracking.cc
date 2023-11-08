@@ -41,12 +41,16 @@ namespace ORB_SLAM3
 {
 
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Atlas *pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings):
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Atlas *pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings,
+    const cv::Ptr<cv::aruco::Dictionary> aruco_dict,
+    const int init_tag_id,
+    const float init_tag_size):
     mState(NO_IMAGES_YET), mSensor(sensor), mTrackedFr(0), mbStep(false),
     mbOnlyTracking(false), mbMapUpdated(false), mbVO(false), mpORBVocabulary(pVoc), mpKeyFrameDB(pKFDB),
     mbReadyToInitializate(false), mpSystem(pSys), mpViewer(NULL), bStepByStep(false),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(0.2),
-    mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr), mpLastKeyFrame(static_cast<KeyFrame*>(NULL))
+    mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr), mpLastKeyFrame(static_cast<KeyFrame*>(NULL)),
+    maruco_dict(aruco_dict), minit_tag_id(init_tag_id), minit_tag_size(init_tag_size)
 {
     // Load camera parameters from settings file
     if(settings){
@@ -1178,10 +1182,10 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
         // std::cout<< "mState: " << mState << std::endl;
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         {
-            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib, maruco_dict);
         }
         else{
-            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib, maruco_dict);
         }
     }
 
@@ -1517,7 +1521,7 @@ void Tracking::Track()
         }
         else
         {
-            TagAidedMonocularInitialization();
+            MonocularInitialization();
         }
 
         mpFrameDrawer->Update(this);
@@ -2109,86 +2113,7 @@ void Tracking::StereoInitialization()
     }
 }
 
-
 void Tracking::MonocularInitialization()
-{
-    if(!mbReadyToInitializate)
-    {
-        // Set Reference Frame
-        if(mCurrentFrame.mvKeys.size()>100)
-        {
-
-            mInitialFrame = Frame(mCurrentFrame);
-            mLastFrame = Frame(mCurrentFrame);
-            mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
-            for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
-                mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
-
-            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
-
-            if (mSensor == System::IMU_MONOCULAR)
-            {
-                if(mpImuPreintegratedFromLastKF)
-                {
-                    delete mpImuPreintegratedFromLastKF;
-                }
-                mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
-                mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
-
-            }
-
-            mbReadyToInitializate = true;
-            return;
-        }
-    }
-    else
-    {
-        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>1.0)))
-        {
-            mbReadyToInitializate = false;
-            std::cout << "Failed to init: n_keypoints " << (int)mCurrentFrame.mvKeys.size() << " time_since_init_frame" << mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp << std::endl;
-            return;
-        }
-
-        // Find correspondences
-        ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,300);
-
-        // Check if there are enough correspondences
-        if(nmatches<50)
-        {
-            mbReadyToInitializate = false;
-            std::cout << "Failed to init: nmatches " << nmatches << std::endl;
-            return;
-        }
-
-        Sophus::SE3f Tcw;
-        vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
-
-        if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Tcw,mvIniP3D,vbTriangulated))
-        {
-            for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
-            {
-                if(mvIniMatches[i]>=0 && !vbTriangulated[i])
-                {
-                    mvIniMatches[i]=-1;
-                    nmatches--;
-                }
-            }
-
-            // Set Frame Poses
-            mInitialFrame.SetPose(Sophus::SE3f());
-            mCurrentFrame.SetPose(Tcw);
-
-            CreateInitialMapMonocular();
-        } else {
-            std::cout << "ReconstructWithTwoViews Failed" << std::endl;
-        }
-    }
-}
-
-
-void Tracking::TagAidedMonocularInitialization()
 {
     if(!mbReadyToInitializate)
     {
@@ -2261,6 +2186,8 @@ void Tracking::TagAidedMonocularInitialization()
                 mInitialFrame.mvKeysUn,
                 mCurrentFrame.mvKeysUn,
                 mvIniMatches,
+                minit_tag_id,
+                minit_tag_size,
                 Tcw,
                 mvIniP3D,
                 vbTriangulated

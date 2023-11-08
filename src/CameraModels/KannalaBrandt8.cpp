@@ -213,7 +213,9 @@ namespace ORB_SLAM3 {
             const std::vector<cv::KeyPoint>& vKeys1, 
             const std::vector<cv::KeyPoint>& vKeys2,
             const std::vector<int> &vMatches12,
-            Sophus::SE3f &T21, 
+            const int tag_id,
+            const float tag_size,
+            Sophus::SE3f &T21,
             std::vector<cv::Point3f> &vP3D, 
             std::vector<bool> &vbTriangulated
         ){
@@ -224,10 +226,6 @@ namespace ORB_SLAM3 {
         vP3D.clear();
         vbTriangulated.clear();
 
-        // HACK: hardcode tag id and size
-        int tag_id = 13;
-        float tag_size = 0.16;
-        
         // Check if tags are avaliable
         auto tag_iter1 = std::find(markerIds1.begin(), markerIds1.end(), tag_id);
         auto tag_iter2 = std::find(markerIds2.begin(), markerIds2.end(), tag_id);

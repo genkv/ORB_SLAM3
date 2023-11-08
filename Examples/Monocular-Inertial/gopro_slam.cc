@@ -133,6 +133,16 @@ int main(int argc, char **argv) {
   std::string mask_img_path;
   app.add_option("--mask_img", mask_img_path);
 
+  // Aruco tag for initialization
+  int aruco_dict_id = cv::aruco::DICT_4X4_50;
+  app.add_option("--aruco_dict_id", aruco_dict_id);
+
+  int init_tag_id = 13;
+  app.add_option("--init_tag_id", init_tag_id);
+
+  float init_tag_size = 0.16; // in meters
+  app.add_option("--init_tag_size", init_tag_size);
+
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
@@ -167,12 +177,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Create SLAM system. It initializes all system threads and gets ready to
-  // process frames.
+  // Create SLAM system. It initializes all system threads and gets ready to process frames.
+  cv::Ptr<cv::aruco::Dictionary> aruco_dict = cv::aruco::getPredefinedDictionary(aruco_dict_id);
   ORB_SLAM3::System SLAM(
     vocabulary, setting, 
     ORB_SLAM3::System::IMU_MONOCULAR, 
-    enable_gui, load_map, save_map
+    enable_gui, load_map, save_map,
+    aruco_dict, init_tag_id, init_tag_size
   );
 
   // Open video file
