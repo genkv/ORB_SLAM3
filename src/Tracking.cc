@@ -3094,6 +3094,7 @@ void Tracking::SearchLocalPoints()
             mCurrentFrame.mmProjectPoints[pMP->mnId] = cv::Point2f(pMP->mTrackProjX, pMP->mTrackProjY);
         }
     }
+    // cout << "SearchLocalPoints() nToMatch=" << nToMatch << endl;
 
     if(nToMatch>0)
     {
@@ -3119,8 +3120,8 @@ void Tracking::SearchLocalPoints()
 
         if(mState==LOST || mState==RECENTLY_LOST) // Lost for less than 1 second
             th=15; // 15
-
         int matches = matcher.SearchByProjection(mCurrentFrame, mvpLocalMapPoints, th, mpLocalMapper->mbFarPoints, mpLocalMapper->mThFarPoints);
+        // cout << "matcher.SearchByProjection matches=" << matches << endl;
     }
 }
 
