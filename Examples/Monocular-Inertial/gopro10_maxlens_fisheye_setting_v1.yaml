@@ -67,7 +67,7 @@ ORBextractor.nFeatures: 2500
 ORBextractor.scaleFactor: 1.2
 
 # ORB Extractor: Number of levels in the scale pyramid	
-ORBextractor.nLevels: 10
+ORBextractor.nLevels: 14
 # ORBextractor.nLevels: 6
 
 # ORB Extractor: Fast threshold

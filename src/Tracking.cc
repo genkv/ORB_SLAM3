@@ -1688,6 +1688,8 @@ void Tracking::Track()
                         vector<MapPoint*> vpMapPointMatches = pKFcur->GetMapPointMatches();
                         cout << "pKFcur->GetMapPointMatches().size()" << vpMapPointMatches.size() << endl;
 
+                        cout << "1691 pKFcur->GetVelocity() " << pKFcur->GetVelocity() << endl;
+
                         // update last keyframe
                         mnLastKeyFrameId = pKFcur->mnId;
                         mpLastKeyFrame = pKFcur;
@@ -1696,7 +1698,9 @@ void Tracking::Track()
                         mpAtlas->AddKeyFrame(pKFcur);
                         pKFcur->UpdateConnections();
                         mpLocalMapper->InsertKeyFrame(pKFcur);
-                        mState == OK;
+                        mState = OK;
+                    } else {
+                        cout << "Relocalization() failed." << endl;
                     }
                 }
             }
@@ -1796,6 +1800,7 @@ void Tracking::Track()
             if(bOK)
             {
                 bOK = TrackLocalMap();
+                // cout << "Done TrackLocalMap() line 1801" << endl;
             }
             if(!bOK){
                 cout << "Fail to track local map!" << endl;
@@ -1861,7 +1866,7 @@ void Tracking::Track()
             {
                 if(mCurrentFrame.mnId==(mnLastRelocFrameId+mnFramesToResetIMU))
                 {
-                    cout << "RESETING FRAME!!!" << endl;
+                    // cout << "RESETING FRAME!!!" << endl;
                     ResetFrameIMU();
                 }
                 else if(mCurrentFrame.mnId>(mnLastRelocFrameId+30))
@@ -2723,8 +2728,10 @@ bool Tracking::TrackLocalMap()
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     mpLocalMapper->mnMatchesInliers=mnMatchesInliers;
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
+    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<30){
+        cout << "TrackLocalMap() mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50" << " = " << mnMatchesInliers << endl;
         return false;
+    }
 
     if((mnMatchesInliers>10)&&(mState==RECENTLY_LOST))
         return true;
@@ -2732,12 +2739,18 @@ bool Tracking::TrackLocalMap()
 
     if (mSensor == System::IMU_MONOCULAR)
     {
-        if((mnMatchesInliers<15 && mpAtlas->isImuInitialized())||(mnMatchesInliers<50 && !mpAtlas->isImuInitialized()))
+        if((mnMatchesInliers<15 && mpAtlas->isImuInitialized()))
         {
+            cout << "TrackLocalMap() mnMatchesInliers<15 && mpAtlas->isImuInitialized()" << " = " << mnMatchesInliers << endl;
+            return false;
+        } else if (mnMatchesInliers<50 && !mpAtlas->isImuInitialized()){
+            cout << "TrackLocalMap() mnMatchesInliers<50 && !mpAtlas->isImuInitialized()" << " = " << mnMatchesInliers << endl;
             return false;
         }
-        else
+        else {
+            // cout << "TrackLocalMap() return true mnMatchesInliers" << " = " << mnMatchesInliers << endl;
             return true;
+        }
     }
     else if (mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
     {
@@ -2750,9 +2763,10 @@ bool Tracking::TrackLocalMap()
     }
     else
     {
-        if(mnMatchesInliers<30)
+        if(mnMatchesInliers<30) {
+            cout << "TrackLocalMap() mnMatchesInliers<30" << " = " << mnMatchesInliers << endl;
             return false;
-        else
+        } else
             return true;
     }
 }
