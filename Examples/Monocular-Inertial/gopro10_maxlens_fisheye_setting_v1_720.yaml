@@ -6,10 +6,10 @@
 File.version: "1.0"
 Camera.type: "KannalaBrandt8"
 # Camera calibration and distortion parameters (OpenICC https://github.com/urbste/OpenImuCameraCalibrator) 
-Camera1.fx: 188.60460651 # 190.97847715128717
-Camera1.fy: 188.60460651 # 190.9733070521226
-Camera1.cx: 320.57432535 # 254.93170605935475
-Camera1.cy: 239.40467006 # 256.8974428996504
+Camera1.fx: 282.906909765 # 190.97847715128717
+Camera1.fy: 282.906909765 # 190.9733070521226
+Camera1.cx: 480.0 # 254.93170605935475
+Camera1.cy: 360.0 # 256.8974428996504
 
 Camera1.k1: -0.017458392874590136 # 0.0034823894022493434
 Camera1.k2: -0.028082549474531236 # 0.0007150348452162257
@@ -17,8 +17,8 @@ Camera1.k3: 0.01283269195493874 # -0.0020532361418706202
 Camera1.k4: -0.004519804281212253 # 0.00020293673591811182
 
 # Camera resolution
-Camera.width: 640
-Camera.height: 480
+Camera.width: 960
+Camera.height: 720
 
 # Camera frames per second 
 Camera.fps: 60
@@ -65,7 +65,7 @@ ORBextractor.nFeatures: 1250
 ORBextractor.scaleFactor: 1.2
 
 # ORB Extractor: Number of levels in the scale pyramid	
-ORBextractor.nLevels: 6
+ORBextractor.nLevels: 8
 
 # ORB Extractor: Fast threshold
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
