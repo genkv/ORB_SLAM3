@@ -54,6 +54,7 @@ IMU.GyroWalk: 5.0e-5 # rad/s^1.5
 IMU.AccWalk: 0.0055 # m/s^2.5
 IMU.Frequency: 200.0
 
+System.thFarPoints: 20.0 # meters
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters

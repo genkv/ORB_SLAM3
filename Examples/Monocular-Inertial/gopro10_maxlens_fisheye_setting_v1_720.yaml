@@ -76,6 +76,8 @@ ORBextractor.nLevels: 8
 ORBextractor.iniThFAST: 20 # 20
 ORBextractor.minThFAST: 7 # 7
 
+System.thFarPoints: 20.0 # meters
+
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
