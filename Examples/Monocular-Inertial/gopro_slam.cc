@@ -143,6 +143,11 @@ int main(int argc, char **argv) {
   float init_tag_size = 0.16; // in meters
   app.add_option("--init_tag_size", init_tag_size);
 
+  // if lost more than max_lost_frames, terminate
+  // disable the check if <= 0
+  int max_lost_frames = -1;
+  app.add_option("--max_lost_frames", max_lost_frames);
+
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
@@ -202,6 +207,7 @@ int main(int argc, char **argv) {
   
   std::vector<ORB_SLAM3::IMU::Point> vImuMeas;
   size_t last_imu_idx = 0;
+  int n_lost_frames = 0;
   for (int frame_idx=0; frame_idx < nImages; frame_idx++){
     double tframe = (double)frame_idx / fps;
 
@@ -240,6 +246,17 @@ int main(int argc, char **argv) {
 
     // Pass the image to the SLAM system
     auto result = SLAM.LocalizeMonocular(im_track, tframe, vImuMeas);
+
+    // check lost frames
+    if (! result.second){
+        n_lost_frames += 1;
+        std::cout << "n_lost_frames=" << n_lost_frames << std::endl;
+    }
+    if ((max_lost_frames > 0) && (n_lost_frames >= max_lost_frames)){
+        std::cout << "Lost tracking on " << n_lost_frames << " >= " << max_lost_frames << " frames. Terminating!" << std::endl;
+        SLAM.Shutdown();
+        return 1;
+    }
 
     std::chrono::steady_clock::time_point t2 =
         std::chrono::steady_clock::now();

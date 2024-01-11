@@ -507,8 +507,8 @@ std::pair<Sophus::SE3f, bool> System::LocalizeMonocular(const cv::Mat &im, const
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
     int trackingState = mpTracker->mState;
     // has tracking for OK and RECENTLY_LOST state.
-    // bool has_tracking = (trackingState == 2) || (trackingState == 3);
-    bool has_tracking = trackingState == 2;
+    bool has_tracking = (trackingState == 2) || (trackingState == 3);
+    // bool has_tracking = trackingState == 2;
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
