@@ -42,7 +42,7 @@ class LocalMapping
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    LocalMapping(System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial, const string &_strSeqName=std::string());
+    LocalMapping(System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
 
@@ -96,11 +96,6 @@ public:
     double mFirstTs;
     int mnMatchesInliers;
 
-    // For debugging (erase in normal mode)
-    int mInitFr;
-    int mIdxIteration;
-    string strSequence;
-
     bool mbNotBA1;
     bool mbNotBA2;
     bool mbBadImu;
@@ -110,25 +105,6 @@ public:
     // not consider far points (clouds)
     bool mbFarPoints;
     float mThFarPoints;
-
-#ifdef REGISTER_TIMES
-    vector<double> vdKFInsert_ms;
-    vector<double> vdMPCulling_ms;
-    vector<double> vdMPCreation_ms;
-    vector<double> vdLBA_ms;
-    vector<double> vdKFCulling_ms;
-    vector<double> vdLMTotal_ms;
-
-
-    vector<double> vdLBASync_ms;
-    vector<double> vdKFCullingSync_ms;
-    vector<int> vnLBA_edges;
-    vector<int> vnLBA_KFopt;
-    vector<int> vnLBA_KFfixed;
-    vector<int> vnLBA_MPs;
-    int nLBA_exec;
-    int nLBA_abort;
-#endif
 protected:
 
     bool CheckNewKeyFrames();

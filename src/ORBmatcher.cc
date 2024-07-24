@@ -49,14 +49,18 @@ namespace ORB_SLAM3
         for(size_t iMP=0; iMP<vpMapPoints.size(); iMP++)
         {
             MapPoint* pMP = vpMapPoints[iMP];
-            if(!pMP->mbTrackInView && !pMP->mbTrackInViewR)
+            if(!pMP->mbTrackInView && !pMP->mbTrackInViewR){
+                // cout << "SearchByProjection 53" << endl;
                 continue;
+            }
+            if(bFarPoints && pMP->mTrackDepth>thFarPoints){
+                // cout << "SearchByProjection 57" << endl;
+                continue;
+            }
 
-            if(bFarPoints && pMP->mTrackDepth>thFarPoints)
+            if(pMP->isBad()){
                 continue;
-
-            if(pMP->isBad())
-                continue;
+            }
 
             if(pMP->mbTrackInView)
             {
@@ -70,6 +74,7 @@ namespace ORB_SLAM3
 
                 const vector<size_t> vIndices =
                         F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
+                // cout << "SearchByProjection 77 vIndices.size()=" << vIndices.size() << endl;
 
                 if(!vIndices.empty()){
                     const cv::Mat MPdescriptor = pMP->GetDescriptor();

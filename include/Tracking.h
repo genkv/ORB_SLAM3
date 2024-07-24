@@ -59,7 +59,10 @@ class Tracking
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
-             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
+             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings,
+             const cv::Ptr<cv::aruco::Dictionary> aruco_dict,
+             const int init_tag_id,
+             const float init_tag_size);
 
     ~Tracking();
 
@@ -108,13 +111,6 @@ public:
 
     float GetImageScale();
 
-#ifdef REGISTER_LOOP
-    void RequestStop();
-    bool isStopped();
-    void Release();
-    bool stopRequested();
-#endif
-
 public:
 
     // Tracking states
@@ -125,7 +121,8 @@ public:
         OK=2,
         RECENTLY_LOST=3,
         LOST=4,
-        OK_KLT=5
+        OK_KLT=5,
+        INIT_RELOCALIZE=6
     };
 
     eTrackingState mState;
@@ -153,6 +150,7 @@ public:
     list<KeyFrame*> mlpReferences;
     list<double> mlFrameTimes;
     list<bool> mlbLost;
+    list<eTrackingState> mlState;
 
     // frames with estimated pose
     int mTrackedFr;
@@ -171,26 +169,9 @@ public:
     double t0IMU; // time-stamp of IMU initialization
     bool mFastInit = false;
 
-
     vector<MapPoint*> GetLocalMapMPS();
 
     bool mbWriteStats;
-
-#ifdef REGISTER_TIMES
-    void LocalMapStats2File();
-    void TrackStats2File();
-    void PrintTimeStats();
-
-    vector<double> vdRectStereo_ms;
-    vector<double> vdResizeImage_ms;
-    vector<double> vdORBExtract_ms;
-    vector<double> vdStereoMatch_ms;
-    vector<double> vdIMUInteg_ms;
-    vector<double> vdPosePred_ms;
-    vector<double> vdLMTrack_ms;
-    vector<double> vdNewKF_ms;
-    vector<double> vdTrackTotal_ms;
-#endif
 
 protected:
 
@@ -265,6 +246,11 @@ protected:
     ORBVocabulary* mpORBVocabulary;
     KeyFrameDatabase* mpKeyFrameDB;
 
+    //Aruco
+    cv::Ptr<cv::aruco::Dictionary> maruco_dict;
+    int minit_tag_id;
+    float minit_tag_size;
+
     // Initalization (only for monocular)
     bool mbReadyToInitializate;
     bool mbSetInit;
@@ -327,6 +313,7 @@ protected:
     unsigned int mnLastInitFrameId;
 
     bool mbCreatedMap;
+    bool mbLoadedMap;
 
     //Motion Model
     bool mbVelocity{false};
@@ -356,15 +343,6 @@ protected:
     Sophus::SE3f mTlr;
 
     void newParameterLoader(Settings* settings);
-
-#ifdef REGISTER_LOOP
-    bool Stop();
-
-    bool mbStopped;
-    bool mbStopRequested;
-    bool mbNotStop;
-    std::mutex mMutexStop;
-#endif
 
 public:
     cv::Mat mImRight;

@@ -1,5 +1,4 @@
-# Ignore all
-*
+buildRelDebug/*
 
 # Unignore all with extensions
 !*.*
@@ -34,6 +33,11 @@ Examples/Monocular-Inertial/mono_inertial_realsense_t265
 Examples/Monocular-Inertial/mono_inertial_realsense_D435i
 Examples/Monocular-Inertial/mono_inertial_realsense_D435i_2
 
+Examples/Monocular-Inertial/export_map_from_atlas
+Examples/Monocular-Inertial/gopro_slam
+Examples/Monocular-Inertial/mono_inertial_gopro_localize
+Examples/Monocular-Inertial/mono_inertial_gopro_vi
+
 Examples/Stereo-Inertial/stereo_inertial_euroc
 Examples/Stereo-Inertial/stereo_inertial_tum_vi
 Examples/Stereo-Inertial/stereo_inertial_realsense_t265
@@ -55,8 +59,8 @@ Examples/Tests/sophus_test
 Examples/ROS/ORB_SLAM3/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM3/build/
 
-KeyFrameTrajectory.txt
-CameraTrajectory.txt
+*Trajectory.txt
+*Trajectory.txt
 kf_*.txt
 f_*.txt
 Thirdparty/DBoW2/build/
@@ -64,6 +68,7 @@ Thirdparty/DBoW2/lib/
 Thirdparty/g2o/build/
 Thirdparty/g2o/config.h
 Thirdparty/g2o/lib/
+Thirdparty/Pangolin/build/
 Vocabulary/ORBvoc.txt
 build/
 
@@ -91,3 +96,4 @@ my_settings.txt
 borrar/*
 
 */ExecMean.txt
+.vscode
